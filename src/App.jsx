@@ -1,121 +1,82 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useRef, useEffect } from 'react'
+import { buildChord, getDefs } from './engines/chordEngine'
+import { weightedRandom } from './engines/weightEngine'
+import { playChord } from './engines/audioEngine'
 
-function App() {
-  const [count, setCount] = useState(0)
+const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
+
+export default function App() {
+  const [playing, setPlaying] = useState(false)
+  const [key, setKey] = useState('C')
+  const [mode, setMode] = useState('major')
+  const [bpm, setBpm] = useState(90)
+  const [weights, setWeights] = useState([8,2,2,7,8,6,1])
+  const [currentChord, setCurrentChord] = useState(null)
+
+  const timerRef = useRef(null)
+  const stateRef = useRef({ playing, key, mode, bpm, weights })
+
+  useEffect(() => {
+    stateRef.current = { playing, key, mode, bpm, weights }
+  }, [playing, key, mode, bpm, weights])
+
+  function next() {
+    const { playing, key, mode, bpm, weights } = stateRef.current
+    if (!playing) return
+    const degree = weightedRandom(weights)
+    const chord = buildChord(key, mode, degree)
+    const durSec = (60 / bpm) * 4
+    playChord(chord.midis, durSec)
+    setCurrentChord(chord)
+    timerRef.current = setTimeout(next, durSec * 1000)
+  }
+
+  function toggle() {
+    if (playing) {
+      clearTimeout(timerRef.current)
+      setPlaying(false)
+      setCurrentChord(null)
+    } else {
+      setPlaying(true)
+    }
+  }
+
+  useEffect(() => {
+    if (playing) next()
+    return () => clearTimeout(timerRef.current)
+  }, [playing])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div>
+      <h1>{currentChord ? currentChord.name : '—'}</h1>
+      <p>{currentChord?.roman}</p>
 
-      <div className="ticks"></div>
+      <button onClick={toggle}>{playing ? 'Stop' : 'Play'}</button>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <select value={key} onChange={e => setKey(e.target.value)}>
+        {KEYS.map(k => <option key={k}>{k}</option>)}
+      </select>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <select value={mode} onChange={e => setMode(e.target.value)}>
+        <option value="major">Major</option>
+        <option value="minor">Minor</option>
+      </select>
+
+      <input type="range" min="50" max="200" value={bpm}
+        onChange={e => setBpm(Number(e.target.value))} />
+      <span>{bpm} BPM</span>
+
+      {getDefs(mode).map((def, i) => (
+        <div key={i}>
+          <span>{def.roman}</span>
+          <input type="range" min="0" max="10" value={weights[i]}
+            onChange={e => {
+              const next = [...weights]
+              next[i] = Number(e.target.value)
+              setWeights(next)
+            }} />
+        </div>
+      ))}
+    </div>
   )
 }
-
-export default App
