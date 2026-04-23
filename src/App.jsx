@@ -65,7 +65,7 @@ export default function App() {
       <h1>{currentChord ? currentChord.name : '—'}</h1>
       <p>{currentChord?.roman}</p>
 
-      <div style={{ display: 'flex', gap: '12px', flexDirection: 'row-reverse', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: '12px', flexDirection: 'row-reverse', overflowX: 'auto' , justifyContent: 'center'}}>
         {history.map((c, i) => (
           <div key={i} style={{ opacity: 1 - i * 0.05, whiteSpace: 'nowrap' }}>
             {c.name} {c.roman}
