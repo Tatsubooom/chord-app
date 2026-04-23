@@ -70,7 +70,7 @@ export default function App() {
           <div key={i} style={{ opacity: 1 - i * 0.05, whiteSpace: 'nowrap' }}>
             {c.name} {c.roman}
           </div>
-          ))}
+        ))}
       </div>
 
       <button onClick={toggle}>{playing ? 'Stop' : 'Play'}</button>
