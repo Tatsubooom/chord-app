@@ -46,6 +46,7 @@ export default function App() {
   function toggle() {
     if (playing) {
       clearTimeout(timerRef.current)
+      setHistory([])
       setPlaying(false)
       setCurrentChord(null)
     } else {
@@ -64,11 +65,13 @@ export default function App() {
       <h1>{currentChord ? currentChord.name : '—'}</h1>
       <p>{currentChord?.roman}</p>
 
-      <ul>
+      <div style={{ display: 'flex', gap: '12px', flexDirection: 'row-reverse', overflowX: 'auto' }}>
         {history.map((c, i) => (
-          <li key={i}>{c.name} {c.roman}</li>
-         ))}
-      </ul>
+          <div key={i} style={{ opacity: 1 - i * 0.05, whiteSpace: 'nowrap' }}>
+            {c.name} {c.roman}
+          </div>
+          ))}
+      </div>
 
       <button onClick={toggle}>{playing ? 'Stop' : 'Play'}</button>
 
