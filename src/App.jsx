@@ -1,51 +1,49 @@
 import { useState, useRef, useEffect } from 'react'
 import { buildChord, getDefs } from './engines/chordEngine'
 import { weightedRandom } from './engines/weightEngine'
+import { calcWeights } from './engines/weightEngine'
 import { playChord } from './engines/audioEngine'
 
-//　キーのドロップダウン
 const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
-
 
 export default function App() {
   const [playing, setPlaying] = useState(false)
   const [key, setKey] = useState('C')
   const [mode, setMode] = useState('major')
   const [bpm, setBpm] = useState(90)
+  const [temperature, setTemperature] = useState(0.3)
   const [history, setHistory] = useState([])
-
-  //　各コードの重み（出やすさ）
-  const [weights, setWeights] = useState([8,2,2,7,8,6,1])
   const [currentChord, setCurrentChord] = useState(null)
 
-  //　再レンダリングされないようにrefで全状態・時間を管理する
   const timerRef = useRef(null)
-  const stateRef = useRef({ playing, key, mode, bpm, weights })
+  const historyRef = useRef([])
+  const stateRef = useRef({ playing, key, mode, bpm, temperature })
 
-  // useEffectで差分を検出 / stateref経由で状態を管理する
   useEffect(() => {
-    stateRef.current = { playing, key, mode, bpm, weights }
-  }, [playing, key, mode, bpm, weights])
+    stateRef.current = { playing, key, mode, bpm, temperature }
+  }, [playing, key, mode, bpm, temperature])
 
-  // MAIN処理
   function next() {
-    const { playing, key, mode, bpm, weights } = stateRef.current
+    const { playing, key, mode, bpm, temperature } = stateRef.current
     if (!playing) return
+
+    const currentDegree = historyRef.current[0]?.degree ?? 0
+    const weights = calcWeights(currentDegree, historyRef.current, mode, temperature)
     const degree = weightedRandom(weights)
-    const chord = buildChord(key, mode, degree)
+    const chord = buildChord(key, mode, degree, temperature)
     const durSec = (60 / bpm) * 4
 
-    //　音の再生
+    historyRef.current = [chord, ...historyRef.current].slice(0, 20)
     playChord(chord.midis, durSec)
     setCurrentChord(chord)
-    setHistory(prev => [chord, ...prev].slice(0, 20))
+    setHistory([...historyRef.current])
     timerRef.current = setTimeout(next, durSec * 1000)
   }
 
-  //　再生・停止の切り替え
   function toggle() {
     if (playing) {
       clearTimeout(timerRef.current)
+      historyRef.current = []
       setHistory([])
       setPlaying(false)
       setCurrentChord(null)
@@ -54,7 +52,6 @@ export default function App() {
     }
   }
 
-  // playingの差分取得してnext()を一回だけ実行
   useEffect(() => {
     if (playing) next()
     return () => clearTimeout(timerRef.current)
@@ -65,7 +62,7 @@ export default function App() {
       <h1>{currentChord ? currentChord.name : '—'}</h1>
       <p>{currentChord?.roman}</p>
 
-      <div style={{ display: 'flex', gap: '12px', flexDirection: 'row-reverse', overflowX: 'auto' , justifyContent: 'center'}}>
+      <div style={{ display: 'flex', gap: '12px', flexDirection: 'row-reverse', overflowX: 'auto', justifyContent: 'center' }}>
         {history.map((c, i) => (
           <div key={i} style={{ opacity: 1 - i * 0.05, whiteSpace: 'nowrap' }}>
             {c.name} {c.roman}
@@ -89,20 +86,12 @@ export default function App() {
           setBpm(Number(e.target.value))
           clearTimeout(timerRef.current)
           timerRef.current = setTimeout(next, (60 / Number(e.target.value)) * 4 * 1000)
-          }} />
+        }} />
       <span>{bpm} BPM</span>
 
-      {getDefs(mode).map((def, i) => (
-        <div key={i}>
-          <span>{def.roman}</span>
-          <input type="range" min="0" max="10" value={weights[i]}
-            onChange={e => {
-              const next = [...weights]
-              next[i] = Number(e.target.value)
-              setWeights(next)
-            }} />
-        </div>
-      ))}
+      <input type="range" min="0" max="1" step="0.01" value={temperature}
+        onChange={e => setTemperature(Number(e.target.value))} />
+      <span>{Math.round(temperature * 100)}% random</span>
     </div>
   )
 }
