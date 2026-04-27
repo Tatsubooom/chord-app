@@ -65,15 +65,22 @@ export function buildChord(key, scale, degree, temperature = 0.5) {
   const rootIdx    = NOTES.indexOf(key)
   const midiRoot   = 48 + (rootIdx + intervals[degree]) % 12
 
-  // 7th（temperature > 0.3）
-  const seventh = intervals[(degree + Math.floor(intervals.length * 0.57)) % intervals.length]
-  const relSeventh = (seventh - intervals[degree] + 12) % 12
+  const rootInterval = intervals[degree]
   const extraOffsets = []
-  let nameSuffix = def.roman.replace(/[ivIV]/g, '').replace('°','').replace('+','')
+  let nameSuffix = ''
 
-  if (temperature > 0.3 && relSeventh !== 0) {
-    extraOffsets.push(relSeventh)
-    nameSuffix = relSeventh === 11 ? 'maj7' : '7'
+  if (temperature > 0.3) {
+    // スケール内に短7度(10)か長7度(11)が存在するか調べる
+    const minor7th = intervals.find(iv => (iv - rootInterval + 12) % 12 === 10)
+    const major7th = intervals.find(iv => (iv - rootInterval + 12) % 12 === 11)
+
+    if (major7th !== undefined) {
+      extraOffsets.push(11)
+      nameSuffix = 'maj7'
+    } else if (minor7th !== undefined) {
+      extraOffsets.push(10)
+      nameSuffix = '7'
+    }
   }
 
   return {
