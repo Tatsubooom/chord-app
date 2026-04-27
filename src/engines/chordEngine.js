@@ -1,100 +1,89 @@
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
-const MAJOR = [0,2,4,5,7,9,11]
-const MINOR = [0,2,3,5,7,8,10]
 
-const DEFS = {
-  major: [
-    { roman:'I',    offsets:[0,4,7] },
-    { roman:'ii',   offsets:[0,3,7] },
-    { roman:'iii',  offsets:[0,3,7] },
-    { roman:'IV',   offsets:[0,4,7] },
-    { roman:'V',    offsets:[0,4,7] },
-    { roman:'vi',   offsets:[0,3,7] },
-    { roman:'vii°', offsets:[0,3,6] },
-  ],
-  minor: [
-    { roman:'i',    offsets:[0,3,7] },
-    { roman:'ii°',  offsets:[0,3,6] },
-    { roman:'III',  offsets:[0,4,7] },
-    { roman:'iv',   offsets:[0,3,7] },
-    { roman:'v',    offsets:[0,3,7] },
-    { roman:'VI',   offsets:[0,4,7] },
-    { roman:'VII',  offsets:[0,4,7] },
-  ],
+export const SCALES = {
+  // 7音スケール
+  major:       { label: 'Major',            intervals: [0,2,4,5,7,9,11] },
+  minor:       { label: 'Natural minor',    intervals: [0,2,3,5,7,8,10] },
+  dorian:      { label: 'Dorian',           intervals: [0,2,3,5,7,9,10] },
+  phrygian:    { label: 'Phrygian',         intervals: [0,1,3,5,7,8,10] },
+  lydian:      { label: 'Lydian',           intervals: [0,2,4,6,7,9,11] },
+  mixolydian:  { label: 'Mixolydian',       intervals: [0,2,4,5,7,9,10] },
+  locrian:     { label: 'Locrian',          intervals: [0,1,3,5,6,8,10] },
+  harmonicMinor: { label: 'Harmonic minor', intervals: [0,2,3,5,7,8,11] },
+  melodicMinor:  { label: 'Melodic minor',  intervals: [0,2,3,5,7,9,11] },
+  // 5音スケール
+  majorPenta:  { label: 'Major pentatonic', intervals: [0,2,4,7,9]      },
+  minorPenta:  { label: 'Minor pentatonic', intervals: [0,3,5,7,10]     },
+  // 異国スケール
+  arabian:     { label: 'Arabian',          intervals: [0,2,4,5,6,8,10] },
+  japanese:    { label: 'Japanese (In)',    intervals: [0,1,5,7,8]      },
+  hungarian:   { label: 'Hungarian minor',  intervals: [0,2,3,6,7,8,11] },
+  wholetone:   { label: 'Whole tone',       intervals: [0,2,4,6,8,10]   },
+  diminished:  { label: 'Diminished',       intervals: [0,2,3,5,6,8,9,11] },
 }
 
-// ③ 各degreeの拡張音（7th/9th）
-// temperature > 0.3 で7th付加、> 0.6 で9th付加
-const EXTENSIONS = {
-  major: [
-    { suffix:'maj7', seventh:11, ninth:14 },   // I
-    { suffix:'m7',   seventh:10, ninth:14 },   // ii
-    { suffix:'m7',   seventh:10, ninth:null },  // iii
-    { suffix:'maj7', seventh:11, ninth:14 },   // IV
-    { suffix:'7',    seventh:10, ninth:14 },   // V（ドミナント7th）
-    { suffix:'m7',   seventh:10, ninth:14 },   // vi
-    { suffix:'m7b5', seventh:10, ninth:null },  // vii°
-  ],
-  minor: [
-    { suffix:'m7',   seventh:10, ninth:14 },   // i
-    { suffix:'m7b5', seventh:10, ninth:null },  // ii°
-    { suffix:'maj7', seventh:11, ninth:null },  // III
-    { suffix:'m7',   seventh:10, ninth:null },  // iv
-    { suffix:'m7',   seventh:10, ninth:null },  // v
-    { suffix:'maj7', seventh:11, ninth:14 },   // VI
-    { suffix:'7',    seventh:10, ninth:null },  // VII
-  ],
+// 構成音のオフセットからコードの種類を判定
+function detectChordType(offsets) {
+  const third = offsets[1]
+  const fifth  = offsets[2] ?? 7
+  if (third === 4 && fifth === 7)  return { quality: '',    suffix: ''    }  // メジャー
+  if (third === 3 && fifth === 7)  return { quality: 'm',   suffix: 'm'   }  // マイナー
+  if (third === 3 && fifth === 6)  return { quality: 'dim', suffix: '°'   }  // ディミニッシュ
+  if (third === 4 && fifth === 8)  return { quality: 'aug', suffix: '+'   }  // オーギュメント
+  if (third === 2 && fifth === 7)  return { quality: 'sus2',suffix: 'sus2'}  // sus2
+  if (third === 5 && fifth === 7)  return { quality: 'sus4',suffix: 'sus4'}  // sus4
+  return { quality: '', suffix: '' }
 }
 
-// ③ 代理コード（代理元 → 代理先の候補）
-// temperature > 0.6 で確率的に適用
-const SUBSTITUTIONS = {
-  major: {
-    0: [2, 5],   // I  → iii/vi（トニック代理）
-    3: [1],      // IV → ii（サブドミナント代理）
-    4: [6],      // V  → vii°（ドミナント代理）
-  },
-  minor: {
-    0: [2, 5],   // i  → III/VI
-    3: [1],      // iv → ii°
-    4: [6],      // v  → VII
-  },
+// スケールの各音から3和音を自動生成
+function buildDefs(intervals) {
+  return intervals.map((_, i) => {
+    const root  = intervals[i]
+    const third = intervals[(i + Math.floor(intervals.length / 3.5)) % intervals.length]
+    const fifth  = intervals[(i + Math.floor(intervals.length / 2))   % intervals.length]
+
+    const relThird = (third - root + 12) % 12
+    const relFifth = (fifth - root + 12) % 12
+    const offsets  = [0, relThird, relFifth]
+    const { suffix } = detectChordType(offsets)
+
+    const degree = i + 1
+    const romanNumerals = ['I','II','III','IV','V','VI','VII','VIII']
+    const roman = suffix === 'm' || suffix === '°'
+      ? romanNumerals[i].toLowerCase() + suffix
+      : romanNumerals[i] + suffix
+
+    return { roman, offsets }
+  })
 }
 
-export function buildChord(key, mode, degree, temperature = 0.5) {
-  // 代理コードの適用（temperature > 0.6 で確率的に）
-  let actualDegree = degree
-  const subs = SUBSTITUTIONS[mode][degree]
-  if (subs && temperature > 0.6 && Math.random() < (temperature - 0.6) * 0.8) {
-    actualDegree = subs[Math.floor(Math.random() * subs.length)]
-  }
+export function buildChord(key, scale, degree, temperature = 0.5) {
+  const scaleData  = SCALES[scale]
+  const intervals  = scaleData.intervals
+  const defs       = buildDefs(intervals)
+  const def        = defs[degree]
+  const rootIdx    = NOTES.indexOf(key)
+  const midiRoot   = 48 + (rootIdx + intervals[degree]) % 12
 
-  const rootIdx = NOTES.indexOf(key)
-  const scale = mode === 'major' ? MAJOR : MINOR
-  const def = DEFS[mode][actualDegree]
-  const ext = EXTENSIONS[mode][actualDegree]
-  const midiRoot = 48 + (rootIdx + scale[actualDegree]) % 12
-
-  // 拡張音を温度に応じて追加
+  // 7th（temperature > 0.3）
+  const seventh = intervals[(degree + Math.floor(intervals.length * 0.57)) % intervals.length]
+  const relSeventh = (seventh - intervals[degree] + 12) % 12
   const extraOffsets = []
-  let suffix = ''
-  if (temperature > 0.3 && ext.seventh != null) {
-    extraOffsets.push(ext.seventh)
-    suffix = ext.suffix
-  }
-  if (temperature > 0.6 && ext.ninth != null) {
-    extraOffsets.push(ext.ninth)
-    suffix = suffix.replace('7', '9')  // m7→m9, maj7→maj9, 7→9
+  let nameSuffix = def.roman.replace(/[ivIV]/g, '').replace('°','').replace('+','')
+
+  if (temperature > 0.3 && relSeventh !== 0) {
+    extraOffsets.push(relSeventh)
+    nameSuffix = relSeventh === 11 ? 'maj7' : '7'
   }
 
   return {
-    name: NOTES[(rootIdx + scale[actualDegree]) % 12] + suffix,
-    roman: def.roman + suffix,
-    degree: actualDegree,  // パターンマッチングに必要
-    midis: [...def.offsets, ...extraOffsets].map(o => midiRoot + o),
+    name:   NOTES[(rootIdx + intervals[degree]) % 12] + (def.roman.includes('m') || def.roman.includes('°') ? def.roman.slice(-1) === '°' ? '°' : 'm' : '') + nameSuffix,
+    roman:  def.roman,
+    degree,
+    midis:  [...def.offsets, ...extraOffsets].map(o => midiRoot + o),
   }
 }
 
-export function getDefs(mode) {
-  return DEFS[mode]
+export function getDefs(scale) {
+  return buildDefs(SCALES[scale].intervals)
 }

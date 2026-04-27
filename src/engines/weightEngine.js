@@ -57,13 +57,15 @@ function calcPatternBonus(history, mode) {
   return bonus
 }
 
+
 // メイン：各コードの重みを返す
-export function calcWeights(currentDegree, history, mode, temperature) {
-  // ①
+export function calcWeights(currentDegree, history, mode, temperature, scaleLength = 7) {
+  if (scaleLength !== 7 || !TRANSITION[mode]) {
+    const flat = new Array(scaleLength).fill(1)
+    return flat
+  }
   const harmonic = [...TRANSITION[mode][currentDegree]]
-  // ②
   const pattern = calcPatternBonus(history, mode)
-  // ①+② を合成
   const structured = harmonic.map((w, i) => w + pattern[i])
 
   // temperatureで均等にフラット化（0=構造的, 1=完全ランダム）

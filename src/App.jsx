@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { buildChord, getDefs } from './engines/chordEngine'
-import { weightedRandom } from './engines/weightEngine'
-import { calcWeights } from './engines/weightEngine'
+import { SCALES, buildChord, getDefs } from './engines/chordEngine'
+import { weightedRandom, calcWeights } from './engines/weightEngine'
 import { playChord } from './engines/audioEngine'
 
 const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
@@ -9,7 +8,7 @@ const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
 export default function App() {
   const [playing, setPlaying] = useState(false)
   const [key, setKey] = useState('C')
-  const [mode, setMode] = useState('major')
+  const [scale, setScale] = useState('major')
   const [bpm, setBpm] = useState(90)
   const [temperature, setTemperature] = useState(0.3)
   const [history, setHistory] = useState([])
@@ -17,20 +16,23 @@ export default function App() {
 
   const timerRef = useRef(null)
   const historyRef = useRef([])
-  const stateRef = useRef({ playing, key, mode, bpm, temperature })
+  const stateRef = useRef({ playing, key, scale, bpm, temperature })
 
   useEffect(() => {
-    stateRef.current = { playing, key, mode, bpm, temperature }
-  }, [playing, key, mode, bpm, temperature])
+    stateRef.current = { playing, key, scale, bpm, temperature }
+  }, [playing, key, scale, bpm, temperature])
 
   function next() {
-    const { playing, key, mode, bpm, temperature } = stateRef.current
+    const { playing, key, scale, bpm, temperature } = stateRef.current
     if (!playing) return
 
+    const scaleData = SCALES[scale]
+    const scaleLength = scaleData.intervals.length
     const currentDegree = historyRef.current[0]?.degree ?? 0
-    const weights = calcWeights(currentDegree, historyRef.current, mode, temperature)
+    const mode = ['major', 'minor'].includes(scale) ? scale : 'major'
+    const weights = calcWeights(currentDegree, historyRef.current, mode, temperature, scaleLength)
     const degree = weightedRandom(weights)
-    const chord = buildChord(key, mode, degree, temperature)
+    const chord = buildChord(key, scale, degree, temperature)
     const durSec = (60 / bpm) * 4
 
     historyRef.current = [chord, ...historyRef.current].slice(0, 20)
@@ -76,9 +78,10 @@ export default function App() {
         {KEYS.map(k => <option key={k}>{k}</option>)}
       </select>
 
-      <select value={mode} onChange={e => setMode(e.target.value)}>
-        <option value="major">Major</option>
-        <option value="minor">Minor</option>
+      <select value={scale} onChange={e => setScale(e.target.value)}>
+        {Object.entries(SCALES).map(([value, { label }]) => (
+          <option key={value} value={value}>{label}</option>
+        ))}
       </select>
 
       <input type="range" min="50" max="200" value={bpm}
@@ -92,6 +95,12 @@ export default function App() {
       <input type="range" min="0" max="1" step="0.01" value={temperature}
         onChange={e => setTemperature(Number(e.target.value))} />
       <span>{Math.round(temperature * 100)}% random</span>
+
+      {getDefs(scale).map((def, i) => (
+        <div key={i}>
+          <span>{def.roman}</span>
+        </div>
+      ))}
     </div>
   )
 }
