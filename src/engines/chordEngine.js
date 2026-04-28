@@ -60,7 +60,7 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   let nameSuffix = detectChordType(offsets).suffix;
   let tensionSuffix = '';
 
-  // 1. セブンスの出現確率 (Temperatureに線形連動)
+  // 1. セブンスの出現確率
   if (Math.random() < temperature && intervals.length >= 7) {
     if (def.relSeventh === 11) {
       offsets.push(11);
@@ -74,21 +74,24 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
     }
   }
 
-  // 2. テンション(add9)の出現確率
-  if (Math.random() < (temperature * 0.8) && def.relNinth !== undefined) {
+  // 2. テンション(add9)の出現確率を低下 (0.8 -> 0.2)
+  if (Math.random() < (temperature * 0.2) && def.relNinth !== undefined) {
     offsets.push(def.relNinth + 12);
     tensionSuffix += (tensionSuffix ? '(9)' : 'add9');
   }
 
-  // 3. sus4 への変異確率 (特定のコードで発生)
-  if (Math.random() < (temperature * 0.3) && (degree === 4 || degree === 0)) {
+  // 3. sus4 への変異確率を低下 (0.3 -> 0.1)
+  if (Math.random() < (temperature * 0.1) && (degree === 4 || degree === 0)) {
     offsets = [0, 5, 7];
     if (tensionSuffix.includes('7')) offsets.push(10);
     nameSuffix = 'sus4';
   }
 
   const finalOffsets = Array.from(new Set(offsets));
-  const midis = [midiRoot - 12, ...finalOffsets.map(o => midiRoot + o)];
+  
+  // ボイシングの改善: ベース音にルートを任せ、上モノからルートを抜いてスッキリさせる
+  const upperVoicing = finalOffsets.filter(o => o !== 0);
+  const midis = [midiRoot - 12, ...upperVoicing.map(o => midiRoot + o)];
 
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   const baseRoman = romanNumerals[degree % 7] || '?';
