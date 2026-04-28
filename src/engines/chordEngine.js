@@ -15,8 +15,8 @@ export const SCALES = {
 };
 
 function detectChordType(offsets) {
-  const sorted = [...offsets].filter(o => o < 12).sort((a, b) => a - b);
-  const s = JSON.stringify(Array.from(new Set(sorted)));
+  const sorted = [...new Set(offsets.filter(o => o < 12))].sort((a, b) => a - b);
+  const s = JSON.stringify(sorted);
   if (s === '[0,3,7]') return { suffix: 'm' };
   if (s === '[0,4,7]') return { suffix: '' };
   if (s === '[0,3,6]') return { suffix: '°' };
@@ -27,6 +27,7 @@ function detectChordType(offsets) {
 }
 
 function buildDefs(intervals) {
+  if (!intervals) return [];
   const len = intervals.length;
   const step = len >= 7 ? 2 : 1;
   return intervals.map((_, i) => {
@@ -45,8 +46,8 @@ function buildDefs(intervals) {
   });
 }
 
-export function buildChord(key, scale, degree, temperature = 0.5) {
-  const scaleData = SCALES[scale];
+export function buildChord(key, scaleName, degree, temperature = 0.5) {
+  const scaleData = SCALES[scaleName] || SCALES.major;
   const intervals = scaleData.intervals;
   const defs = buildDefs(intervals);
   const def = defs[degree % intervals.length];
@@ -59,9 +60,7 @@ export function buildChord(key, scale, degree, temperature = 0.5) {
   let nameSuffix = detectChordType(offsets).suffix;
   let tensionSuffix = '';
 
-  // --- 確率ベースのテンション付与 (Temperature 0.0 ~ 1.0) ---
-  
-  // 1. セブンスの出現確率 (Temperatureに比例)
+  // 1. セブンスの出現確率 (Temperatureに線形連動)
   if (Math.random() < temperature && intervals.length >= 7) {
     if (def.relSeventh === 11) {
       offsets.push(11);
@@ -71,47 +70,40 @@ export function buildChord(key, scale, degree, temperature = 0.5) {
       tensionSuffix = '7';
     } else if (def.relSeventh === 9) {
       offsets.push(9);
-      tensionSuffix = '6';
+      tensionSuffix = '6'; 
     }
   }
 
-  // 2. テンション add9 の出現確率 (Temperatureに比例)
-  if (Math.random() < temperature && def.relNinth !== undefined) {
-    // 9度は濁りを避けるため常に高いオクターブに配置
+  // 2. テンション(add9)の出現確率
+  if (Math.random() < (temperature * 0.8) && def.relNinth !== undefined) {
     offsets.push(def.relNinth + 12);
-    tensionSuffix += (tensionSuffix.includes('7') || tensionSuffix.includes('6') ? '(9)' : 'add9');
+    tensionSuffix += (tensionSuffix ? '(9)' : 'add9');
   }
 
-  // 3. sus4 への差し替え確率 (Temperatureに比例 / 主にV度やI度で発生しやすい)
-  // ここでは degree 4 (V) または 0 (I) のときに発生しやすく設定
-  if (Math.random() < (temperature * 0.4) && (degree === 4 || degree === 0)) {
+  // 3. sus4 への変異確率 (特定のコードで発生)
+  if (Math.random() < (temperature * 0.3) && (degree === 4 || degree === 0)) {
     offsets = [0, 5, 7];
-    nameSuffix = 'sus4';
-    // sus4 の時もセブンスが乗る可能性を残す
     if (tensionSuffix.includes('7')) offsets.push(10);
+    nameSuffix = 'sus4';
   }
 
-  // 最終的なMIDIノート番号の生成（重複削除）
-  const chordNotes = Array.from(new Set(offsets));
-  const midis = [
-    midiRoot - 12, // ベース音を1オクターブ下に追加
-    ...chordNotes.map(o => midiRoot + o)
-  ];
+  const finalOffsets = Array.from(new Set(offsets));
+  const midis = [midiRoot - 12, ...finalOffsets.map(o => midiRoot + o)];
 
-  // 表示用ローマ数字の正規化
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-  const baseRoman = romanNumerals[degree % 7] || 'I';
+  const baseRoman = romanNumerals[degree % 7] || '?';
   const isMinor = nameSuffix === 'm' || nameSuffix === '°';
   let roman = (isMinor ? baseRoman.toLowerCase() : baseRoman) + nameSuffix + tensionSuffix;
 
   return {
     name: rootNoteName + nameSuffix + tensionSuffix,
     roman: roman,
-    degree,
+    degree: degree % intervals.length,
     midis: midis,
   };
 }
 
-export function getDefs(intervals) {
-  return buildDefs(intervals);
+export function getDefs(scaleName) {
+  const scaleData = SCALES[scaleName] || SCALES.major;
+  return buildDefs(scaleData.intervals);
 }

@@ -96,11 +96,23 @@ export default function App() {
         onChange={e => setTemperature(Number(e.target.value))} />
       <span>{Math.round(temperature * 100)}% random</span>
 
-      {getDefs(scale).map((def, i) => (
-        <div key={i}>
-          <span>{def.roman}</span>
-        </div>
-      ))}
+      {getDefs(scale).map((def, i) => {
+        // 未定義だったdef.romanの代わりに、度数構成から動的にローマ数字を生成して表示
+        const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+        const baseRoman = romanNumerals[i % 7] || '?';
+        const isMinor = def.relThird === 3; 
+        const isDim = def.relThird === 3 && def.relFifth === 6;
+        
+        let roman = isMinor ? baseRoman.toLowerCase() : baseRoman;
+        if (isMinor && !isDim) roman += 'm';
+        if (isDim) roman = baseRoman.toLowerCase() + '°';
+        
+        return (
+          <div key={i}>
+            <span>{roman} (Root: +{def.root})</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
