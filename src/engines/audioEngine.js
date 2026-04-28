@@ -1,47 +1,47 @@
-//インスタンス保持（グローバル化）
-let ctx = null
+let ctx = null;
 
-//インスタンス初期生成（再生ボタンに紐づけ）
 function getCtx() {
-  //音声コンテンツをインスタンス化
-  if (!ctx) ctx = new AudioContext()
-
-  // state = suspend（停止状態）からの復帰
-  if (ctx.state === 'suspended') ctx.resume()
-  return ctx
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
 }
 
-//　コード再生
 export function playChord(midis, durationSec) {
-  //　インスタンス生成
-  const context = getCtx()
+  const context = getCtx();
+  const now = context.currentTime;
+  
+  // 全体の音量バランスを調整（音数が増えるほど1音を小さく）
+  const masterGain = context.createGain();
+  const volumeScale = 0.25 / Math.sqrt(midis.length); // 非線形に抑えて迫力を維持
+  
+  masterGain.gain.setValueAtTime(0, now);
+  masterGain.gain.linearRampToValueAtTime(volumeScale, now + 0.04);
+  masterGain.gain.linearRampToValueAtTime(volumeScale * 0.8, now + durationSec * 0.5);
+  masterGain.gain.linearRampToValueAtTime(0, now + durationSec);
+  
+  masterGain.connect(context.destination);
 
-  //タイマー起動
-  const now = context.currentTime
-  const gain = context.createGain()
+  // 周波数のソート（低い音から順に発音させて美しく）
+  const sortedMidis = [...midis].sort((a, b) => a - b);
 
-  //　ゲイン（ボリューム）の変更・設定
-  gain.gain.setValueAtTime(0, now)
-  //フェードイン (0.05秒後)
-  gain.gain.linearRampToValueAtTime(0.12, now + 0.05) 
-  // フェードアウト　（1コードの流れる時間の5%前）
-  gain.gain.linearRampToValueAtTime(0, now + durationSec * 0.95) 
-
-  //　スピーカーと音声の接続 
-  gain.connect(context.destination) 
-
-  //　オシレーター（音）の設定　＆　コード音声生成
-  midis.forEach(midi => {
-    const osc = context.createOscillator()
-    osc.type = 'triangle'
-
-    //　MIDI番号　→　周波数変換 (A4 = 69　= 440Hzを基本とする)
-    // ex. B4 = 71 ≒ 493.9 Hz = 440 * 2 ^{(71 - 69) / 12} = 440 * 2^0.167 = 440 * 1.123
-    osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12)
-
-    // オシレータをゲインに接続、現在時刻の音源を再生し、設定された演奏時間後止める
-    osc.connect(gain)
-    osc.start(now)
-    osc.stop(now + durationSec)
-  })
+  sortedMidis.forEach((midi, i) => {
+    const osc = context.createOscillator();
+    
+    // 音色のブレンド: 低音は力強く、高音は繊細に
+    if (i === 0) {
+      osc.type = 'sine'; // ベースはサイン波で芯を作る
+    } else {
+      osc.type = 'triangle'; // 上モノはトライアングル波
+    }
+    
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    osc.frequency.setValueAtTime(freq, now);
+    
+    // ストラム（バラし）効果: 高い音ほど少し遅れて鳴らす
+    const delay = i * 0.02; 
+    
+    osc.connect(masterGain);
+    osc.start(now + delay);
+    osc.stop(now + durationSec);
+  });
 }
