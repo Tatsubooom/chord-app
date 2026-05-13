@@ -1,45 +1,41 @@
-let ctx = null;
+let ctx = null
 
 function getCtx() {
-  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-  if (ctx.state === 'suspended') ctx.resume();
-  return ctx;
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)()
+  if (ctx.state === 'suspended') ctx.resume()
+  return ctx
 }
 
 export function playChord(midis, durationSec) {
-  const context = getCtx();
-  const now = context.currentTime;
+  const context = getCtx()
+  const now = context.currentTime
+  const gain = context.createGain()
   
-  const masterGain = context.createGain();
-  // 音数による音量補正
-  const volume = 0.18 / Math.sqrt(midis.length);
+  // 構成音の数に応じてボリュームを調整（音割れ防止）
+  const volume = 0.4 / midis.length
   
-  masterGain.gain.setValueAtTime(0, now);
-  masterGain.gain.linearRampToValueAtTime(volume, now + 0.05);
-  masterGain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+  gain.gain.setValueAtTime(0, now)
+  // 1. アタック：0.05秒で素早く最大音量へ
+  gain.gain.linearRampToValueAtTime(volume, now + 0.05) 
   
-  // 低域を少し強調し、高域のトゲを抑えるためのフィルター
-  const filter = context.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(2500, now); // 高すぎる倍音をカット
+  // 2. ディケイ（減衰）：ゼロに向かって急降下するのではなく、
+  // 終了0.05秒前までに「最大音量の20%」まで緩やかに下げる
+  gain.gain.exponentialRampToValueAtTime(volume * 0.2, now + durationSec - 0.05)
+  
+  // 3. リリース：次のコードに切り替わる直前の0.05秒で完全に音を消す（プチノイズ防止）
+  gain.gain.linearRampToValueAtTime(0, now + durationSec)
+  
+  gain.connect(context.destination)
 
-  masterGain.connect(filter);
-  filter.connect(context.destination);
-
-  midis.forEach((midi, i) => {
-    const osc = context.createOscillator();
-    // ベース音はより太いサイン波、構成音は柔らかなトライアングル波
-    osc.type = i === 0 ? 'sine' : 'triangle';
+  midis.forEach(midi => {
+    const osc = context.createOscillator()
+    osc.type = 'triangle'
     
-    const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    osc.frequency.setValueAtTime(freq, now);
+    // タイミングずれを防ぐための setValueAtTime
+    osc.frequency.setValueAtTime(440 * Math.pow(2, (midi - 69) / 12), now)
     
-    // 微小なデチューンで厚みを出す
-    if (i > 0) osc.detune.setValueAtTime(Math.random() * 4 - 2, now);
-
-    const delay = i * 0.012;
-    osc.connect(masterGain);
-    osc.start(now + delay);
-    osc.stop(now + durationSec);
-  });
+    osc.connect(gain)
+    osc.start(now)
+    osc.stop(now + durationSec)
+  })
 }

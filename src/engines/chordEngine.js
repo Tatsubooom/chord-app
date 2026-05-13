@@ -7,18 +7,12 @@ export const SCALES = {
   minorPenta: { label: 'Minor Pentatonic', intervals: [0, 3, 5, 7, 10] },
 };
 
-/**
- * MIDI番号をノート名（例: A4, C#3）に変換する
- */
 export function midiToNoteName(midi) {
   const noteIdx = midi % 12;
   const octave = Math.floor(midi / 12) - 1;
   return `${NOTES[noteIdx]}${octave}`;
 }
 
-/**
- * スケール内の音度から適切な和音構成（3度、5度、7度、9度）を抽出する定義を生成
- */
 function buildDefs(intervals) {
   if (!intervals) return [];
   const len = intervals.length;
@@ -60,14 +54,18 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   
   const rootIdx = NOTES.indexOf(key);
   const rootNoteName = NOTES[(rootIdx + def.root) % 12];
-  const midiRoot = 48 + (rootIdx + def.root) % 12;
+  
+  // ベース音はC2(36)〜B2(47)の音域に固定して低音の濁りを防ぐ
+  const bassMidi = 36 + ((rootIdx + def.root) % 12);
 
   let offsets = [0, def.relThird, def.relFifth];
   let nameSuffix = (def.relThird === 3) ? 'm' : '';
   if (def.relFifth === 6) nameSuffix = '°';
   let tensionSuffix = '';
 
-  const t7 = temperature * 1.2;
+  const tensionProb = Math.pow(temperature, 2);
+  const t7 = Math.min(tensionProb * 2.0, 1.0); 
+
   if (Math.random() < t7) {
     const s7 = def.relSeventh;
     if (s7 >= 9 && s7 <= 11) {
@@ -78,7 +76,7 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
     }
   }
 
-  if (Math.random() < temperature) {
+  if (Math.random() < tensionProb) {
     const n9 = def.relNinth % 12;
     if (!offsets.includes(n9) && n9 !== 0) {
       offsets.push(n9);
@@ -86,8 +84,18 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
     }
   }
 
-  const finalOffsets = Array.from(new Set(offsets)).sort((a, b) => a - b);
-  const midis = [midiRoot - 12, ...finalOffsets.map(o => midiRoot + o)];
+  // Voice Leading（滑らかな繋がり）を実現するためのアルゴリズム
+  // 構成音をすべて C4(60) に近い音域（G3(55)〜F#4(66)）に折り畳んで転回形を作る
+  const chordTones = offsets.map(o => {
+    const noteClass = (rootIdx + def.root + o) % 12;
+    let midi = 60 + noteClass; // 一旦C4〜B4に配置
+    if (midi > 66) midi -= 12; // G4以上なら1オクターブ下げてG3〜F#4に収める
+    return midi;
+  });
+
+  const finalChordTones = Array.from(new Set(chordTones)).sort((a, b) => a - b);
+  // ベース音と和音を結合
+  const midis = [bassMidi, ...finalChordTones];
 
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   const baseRoman = romanNumerals[degree % 7] || (degree + 1).toString();
@@ -103,7 +111,6 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   };
 }
 
-// App.jsx から参照されるため、スケール名から定義を返す関数を追加してエクスポート
 export function getDefs(scaleName) {
   const scaleData = SCALES[scaleName] || SCALES.major;
   return buildDefs(scaleData.intervals);
