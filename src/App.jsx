@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Fragment } from 'react'
 import { SCALES, buildChord, getDefs } from './engines/chordEngine'
 import { weightedRandom, calcWeights } from './engines/weightEngine'
 import { playChord } from './engines/audioEngine'
@@ -35,7 +35,8 @@ export default function App() {
     const chord = buildChord(key, scale, degree, temperature)
     const durSec = (60 / bpm) * 4
 
-    historyRef.current = [chord, ...historyRef.current].slice(0, 20)
+    // 履歴を直近12件に制限
+    historyRef.current = [chord, ...historyRef.current].slice(0, 12)
     playChord(chord.midis, durSec)
     setCurrentChord(chord)
     setHistory([...historyRef.current])
@@ -62,13 +63,23 @@ export default function App() {
   return (
     <div>
       <h1>{currentChord ? currentChord.name : '—'}</h1>
+      {/* 構成音の表示を追加 */}
+      <p style={{ fontSize: '1.2em', color: '#555', margin: '4px 0' }}>
+        {currentChord ? currentChord.noteNames.join(' / ') : ''}
+      </p>
       <p>{currentChord?.roman}</p>
 
-      <div style={{ display: 'flex', gap: '12px', flexDirection: 'row-reverse', overflowX: 'auto', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: '12px', flexDirection: 'row-reverse', overflowX: 'auto', justifyContent: 'center', alignItems: 'center', margin: '20px 0' }}>
         {history.map((c, i) => (
-          <div key={i} style={{ opacity: 1 - i * 0.05, whiteSpace: 'nowrap' }}>
-            {c.name} {c.roman}
-          </div>
+          <Fragment key={i}>
+            <div style={{ opacity: 1 - i * 0.05, whiteSpace: 'nowrap' }}>
+              {c.name} {c.roman}
+            </div>
+            {/* 4コードごとに区切り線を追加 (最後の要素には表示しない) */}
+            {(i + 1) % 4 === 0 && i !== history.length - 1 && (
+              <div style={{ color: '#aaa', fontWeight: 'bold' }}>|</div>
+            )}
+          </Fragment>
         ))}
       </div>
 
@@ -96,23 +107,24 @@ export default function App() {
         onChange={e => setTemperature(Number(e.target.value))} />
       <span>{Math.round(temperature * 100)}% random</span>
 
-      {getDefs(scale).map((def, i) => {
-        // 未定義だったdef.romanの代わりに、度数構成から動的にローマ数字を生成して表示
-        const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-        const baseRoman = romanNumerals[i % 7] || '?';
-        const isMinor = def.relThird === 3; 
-        const isDim = def.relThird === 3 && def.relFifth === 6;
-        
-        let roman = isMinor ? baseRoman.toLowerCase() : baseRoman;
-        if (isMinor && !isDim) roman += 'm';
-        if (isDim) roman = baseRoman.toLowerCase() + '°';
-        
-        return (
-          <div key={i}>
-            <span>{roman} (Root: +{def.root})</span>
-          </div>
-        )
-      })}
+      <div style={{ marginTop: '20px' }}>
+        {getDefs(scale).map((def, i) => {
+          const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+          const baseRoman = romanNumerals[i % 7] || '?';
+          const isMinor = def.relThird === 3; 
+          const isDim = def.relThird === 3 && def.relFifth === 6;
+          
+          let roman = isMinor ? baseRoman.toLowerCase() : baseRoman;
+          if (isMinor && !isDim) roman += 'm';
+          if (isDim) roman = baseRoman.toLowerCase() + '°';
+          
+          return (
+            <div key={i}>
+              <span>{roman} (Root: +{def.root})</span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

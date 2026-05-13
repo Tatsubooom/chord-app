@@ -10,36 +10,34 @@ export function playChord(midis, durationSec) {
   const context = getCtx();
   const now = context.currentTime;
   
-  // 全体の音量バランスを調整（音数が増えるほど1音を小さく）
   const masterGain = context.createGain();
-  const volumeScale = 0.25 / Math.sqrt(midis.length); // 非線形に抑えて迫力を維持
+  // 音数による音量補正
+  const volume = 0.18 / Math.sqrt(midis.length);
   
   masterGain.gain.setValueAtTime(0, now);
-  masterGain.gain.linearRampToValueAtTime(volumeScale, now + 0.04);
-  masterGain.gain.linearRampToValueAtTime(volumeScale * 0.8, now + durationSec * 0.5);
-  masterGain.gain.linearRampToValueAtTime(0, now + durationSec);
+  masterGain.gain.linearRampToValueAtTime(volume, now + 0.05);
+  masterGain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
   
-  masterGain.connect(context.destination);
+  // 低域を少し強調し、高域のトゲを抑えるためのフィルター
+  const filter = context.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(2500, now); // 高すぎる倍音をカット
 
-  // 周波数のソート（低い音から順に発音させて美しく）
-  const sortedMidis = [...midis].sort((a, b) => a - b);
+  masterGain.connect(filter);
+  filter.connect(context.destination);
 
-  sortedMidis.forEach((midi, i) => {
+  midis.forEach((midi, i) => {
     const osc = context.createOscillator();
-    
-    // 音色のブレンド: 低音は力強く、高音は繊細に
-    if (i === 0) {
-      osc.type = 'sine'; // ベースはサイン波で芯を作る
-    } else {
-      osc.type = 'triangle'; // 上モノはトライアングル波
-    }
+    // ベース音はより太いサイン波、構成音は柔らかなトライアングル波
+    osc.type = i === 0 ? 'sine' : 'triangle';
     
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
     osc.frequency.setValueAtTime(freq, now);
     
-    // ストラム（バラし）効果: 高い音ほど少し遅れて鳴らす
-    const delay = i * 0.02; 
-    
+    // 微小なデチューンで厚みを出す
+    if (i > 0) osc.detune.setValueAtTime(Math.random() * 4 - 2, now);
+
+    const delay = i * 0.012;
     osc.connect(masterGain);
     osc.start(now + delay);
     osc.stop(now + durationSec);
