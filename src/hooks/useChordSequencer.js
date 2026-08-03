@@ -5,6 +5,7 @@ import { playChord } from '../engines/audioEngine'
 import {
   BEATS_PER_MEASURE,
   HISTORY_BEATS,
+  MEASURE_SPLIT_SCALE,
   PATTERN_MIN_RUN,
   PATTERN_POPUP_COOLDOWN,
 } from '../constants'
@@ -18,8 +19,9 @@ function pickBeats(totalBeats, temperature, enableMultiChord) {
   const rem = BEATS_PER_MEASURE - beatInMeasure
   const r = Math.random()
 
-  // Temp=0.3の時、分割確率は 0.09 と低め。1拍になる確率はさらに低い。
-  const splitProb = Math.pow(temperature, 2)
+  // 分割確率は temperature^2 に全体スケールを掛けて低めに抑える（Temp=0.3 で約3.6%）。
+  // 1拍になる確率はさらに低い。
+  const splitProb = Math.pow(temperature, 2) * MEASURE_SPLIT_SCALE
   const oneBeatProb = splitProb * 0.3
 
   if (rem === 4) {
