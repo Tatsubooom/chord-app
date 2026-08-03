@@ -131,6 +131,62 @@ export function getPatternMatches(history, mode, temperature, scaleLength = 7) {
   return calcPatternBonus(history, effectiveMode, temperature, scaleLength).contributors;
 }
 
+// ---- 音楽理論による補正 --------------------------------------------------
+// ダイアトニック各度数のルート半音（機能和声・5度圏のルート進行の計算に使う）
+const SCALE_ROOTS = {
+  major: [0, 2, 4, 5, 7, 9, 11],
+  minor: [0, 2, 3, 5, 7, 8, 10],
+};
+
+// 各度数の和声機能: T(トニック) / SD(サブドミナント) / D(ドミナント)
+const FUNCTION = {
+  major: ['T', 'SD', 'T', 'SD', 'D', 'T', 'D'], // I ii iii IV V vi vii°
+  minor: ['T', 'SD', 'T', 'SD', 'D', 'SD', 'D'], // i ii° III iv v VI VII
+};
+
+// ルート進行の質（現コード→次コードのルート移動・半音単位, 0-11）。
+// 下降5度(=+5)が最も自然な「解決」、下降3度は共通音が多く滑らか、上行2度は定番。
+const ROOT_MOTION_MULT = {
+  5: 1.6, // 下降完全5度 / 上行完全4度: V→I, ii→V。最も強い進行
+  9: 1.3, // 下降短3度: I→vi など、共通音2つで滑らか
+  8: 1.25, // 下降長3度: I→VI(b) 等
+  2: 1.2, // 上行長2度: IV→V, I→ii
+  10: 1.1, // 下降長2度
+  3: 1.05, // 上行短3度
+  4: 1.05, // 上行長3度
+  7: 1.05, // 上行完全5度: T→D は可
+  0: 0.4, // 同じルートの停滞は強く抑制
+  6: 0.85, // 三全音移動は控えめ
+  1: 0.9,
+  11: 1.0,
+};
+
+function functionMult(curF, nextF) {
+  if (curF === 'D' && nextF === 'T') return 1.45; // ドミナント→トニックの解決
+  if (curF === 'D' && nextF === 'SD') return 0.5; // 逆行(retrogression)を抑制
+  if (curF === 'SD' && nextF === 'D') return 1.35; // 準備→ドミナント
+  if (curF === 'SD' && nextF === 'T') return 1.1; // 変終止(plagal)
+  if (curF === 'T' && nextF === 'SD') return 1.15; // 前進 T→SD
+  if (curF === 'T' && nextF === 'D') return 1.1;
+  if (curF === 'T' && nextF === 'T') return 0.85; // トニック内の停滞は控えめ
+  return 1.0;
+}
+
+// 現コードから各度数へ進むときの理論スコア（乗数）を返す。7音ダイアトニックのみ適用。
+function calcTheoryMultipliers(currentDegree, mode, scaleLength) {
+  if (scaleLength !== 7 || !SCALE_ROOTS[mode]) return new Array(scaleLength).fill(1);
+
+  const roots = SCALE_ROOTS[mode];
+  const funcs = FUNCTION[mode];
+  const cur = currentDegree % 7;
+
+  return roots.map((_, i) => {
+    const motion = (roots[i] - roots[cur] + 12) % 12;
+    const rootMult = ROOT_MOTION_MULT[motion] ?? 1.0;
+    return rootMult * functionMult(funcs[cur], funcs[i]);
+  });
+}
+
 export function weightedRandom(weights) {
   const total = weights.reduce((a, b) => a + b, 0);
   if (total <= 0) return Math.floor(Math.random() * weights.length);
@@ -150,11 +206,14 @@ export function calcWeights(currentDegree, history, mode, temperature, scaleLeng
   const harmonic = [...(table[currentDegree % scaleLength] || new Array(scaleLength).fill(1))];
 
   const { bonus: patternBonus } = calcPatternBonus(history, effectiveMode, temperature, scaleLength);
+  const theory = calcTheoryMultipliers(currentDegree, effectiveMode, scaleLength);
   const exponent = 2.5 - (temperature * 2.0);
-  
+
   let finalWeights = harmonic.map((w, i) => {
-    let combined = w + (patternBonus[i] || 0);
-    return Math.pow(combined, exponent);
+    const combined = w + (patternBonus[i] || 0);
+    // 理論補正は temperature が高いほど弱める（＝多様性を優先）
+    const mult = 1 + (theory[i] - 1) * (1 - temperature);
+    return Math.pow(combined * mult, exponent);
   });
 
   if (finalWeights.length !== scaleLength) {

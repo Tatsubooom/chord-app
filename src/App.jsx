@@ -28,7 +28,6 @@ export default function App() {
     <div>
       <ChordDisplay chord={currentChord} />
       <ChordHistory history={history} />
-      <ProbabilityMeter distribution={distribution} />
 
       <TransportControls
         playing={playing}
@@ -60,7 +59,10 @@ export default function App() {
         )}
       </div>
 
-      <DecorationInfo temperature={temperature} enableMultiChord={enableMultiChord} />
+      <div className="readout">
+        <ProbabilityMeter distribution={distribution} />
+        <DecorationInfo temperature={temperature} enableMultiChord={enableMultiChord} />
+      </div>
     </div>
   )
 }
