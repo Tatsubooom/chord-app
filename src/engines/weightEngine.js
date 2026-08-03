@@ -187,6 +187,61 @@ function calcTheoryMultipliers(currentDegree, mode, scaleLength) {
   });
 }
 
+// ---- フレーズ（小節ブロック）単位のテンプレート -----------------------------
+// より大きな塊で進行を確率選択し、フレーズごとに骨格を変えて単調なループを避ける。
+// seq は各小節の頭に狙う度数（0-indexed）。フレーズ長は seq.length 小節。
+const PHRASE_TEMPLATES = {
+  major: [
+    { name: '王道', seq: [3, 4, 2, 5], w: 3 },
+    { name: 'カノン', seq: [0, 4, 5, 2, 3, 0, 3, 4], w: 2 },
+    { name: '小室', seq: [5, 3, 4, 0], w: 3 },
+    { name: '50s', seq: [0, 5, 3, 4], w: 3 },
+    { name: 'Axis', seq: [0, 4, 5, 3], w: 3 },
+    { name: 'PopPunk', seq: [5, 3, 0, 4], w: 2 },
+    { name: 'ターンアラウンド', seq: [0, 5, 1, 4], w: 2 },
+    { name: 'JustTheTwoOfUs', seq: [3, 2, 5, 0], w: 2 },
+    { name: '上行', seq: [0, 1, 2, 3], w: 1 },
+    { name: 'サブドミナント往復', seq: [0, 3, 0, 4], w: 1 },
+  ],
+  minor: [
+    { name: 'アンダルシア', seq: [0, 6, 5, 4], w: 3 },
+    { name: 'エピック', seq: [0, 5, 2, 6], w: 3 },
+    { name: 'i-iv-v', seq: [0, 3, 4, 0], w: 3 },
+    { name: '小室m', seq: [5, 3, 6, 0], w: 2 },
+    { name: 'VI-VII-i', seq: [5, 6, 0, 0], w: 2 },
+    { name: 'III往来', seq: [0, 2, 6, 3], w: 1 },
+    { name: 'i-VI-VII', seq: [0, 5, 6, 0], w: 2 },
+  ],
+  majorPenta: [
+    { name: 'ペンタ1', seq: [0, 3, 4, 0], w: 3 },
+    { name: 'ペンタ2', seq: [0, 2, 3, 0], w: 2 },
+    { name: 'ペンタ3', seq: [4, 3, 0, 0], w: 2 },
+  ],
+  minorPenta: [
+    { name: 'ペンタm1', seq: [0, 2, 3, 0], w: 3 },
+    { name: 'ペンタm2', seq: [0, 4, 2, 0], w: 2 },
+    { name: 'ロック', seq: [0, 1, 4, 0], w: 2 },
+  ],
+};
+
+// フレーズ目標度数を後押しする強さ（temperature が高いほど緩む）
+const PHRASE_TARGET_STRENGTH = 10;
+
+// 直前と同じにならないよう避けつつ、重み付きでフレーズテンプレートを1つ選ぶ
+export function pickPhraseTemplate(mode, scaleLength, avoidName) {
+  const effectiveMode = resolveMode(mode, scaleLength);
+  const list = PHRASE_TEMPLATES[effectiveMode] || PHRASE_TEMPLATES.major;
+  const pool = list.filter((t) => t.name !== avoidName);
+  const from = pool.length ? pool : list;
+  const total = from.reduce((a, t) => a + t.w, 0);
+  let r = Math.random() * total;
+  for (const t of from) {
+    if (r < t.w) return t;
+    r -= t.w;
+  }
+  return from[0];
+}
+
 export function weightedRandom(weights) {
   const total = weights.reduce((a, b) => a + b, 0);
   if (total <= 0) return Math.floor(Math.random() * weights.length);
@@ -198,7 +253,7 @@ export function weightedRandom(weights) {
   return 0;
 }
 
-export function calcWeights(currentDegree, history, mode, temperature, scaleLength = 7) {
+export function calcWeights(currentDegree, history, mode, temperature, scaleLength = 7, target = null) {
   // スケール長に合わせて適切なテーブルを選択
   const effectiveMode = resolveMode(mode, scaleLength);
 
@@ -212,7 +267,12 @@ export function calcWeights(currentDegree, history, mode, temperature, scaleLeng
   let finalWeights = harmonic.map((w, i) => {
     const combined = w + (patternBonus[i] || 0);
     // 理論補正は temperature が高いほど弱める（＝多様性を優先）
-    const mult = 1 + (theory[i] - 1) * (1 - temperature);
+    let mult = 1 + (theory[i] - 1) * (1 - temperature);
+    // フレーズ骨格の目標度数（小節頭）を強く後押し。temperature が高いほど緩む。
+    // 理論のペナルティ(同一ルート等)に負けないよう下限1でクランプしてから加勢する
+    if (target != null && i === target % scaleLength) {
+      mult = Math.max(mult, 1) * (1 + PHRASE_TARGET_STRENGTH * (1 - temperature));
+    }
     return Math.pow(combined * mult, exponent);
   });
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { SCALES, buildChord } from '../engines/chordEngine'
-import { weightedRandom, calcWeights, getPatternMatches } from '../engines/weightEngine'
+import { weightedRandom, calcWeights, getPatternMatches, pickPhraseTemplate } from '../engines/weightEngine'
 import { playChord } from '../engines/audioEngine'
 import {
   BEATS_PER_MEASURE,
@@ -63,6 +63,7 @@ export function useChordSequencer(settings) {
   const totalBeatsRef = useRef(0)
   const idRef = useRef(0)
   const cooldownRef = useRef(0)
+  const phraseRef = useRef(null)
   const settingsRef = useRef(settings)
 
   useEffect(() => {
@@ -75,7 +76,25 @@ export function useChordSequencer(settings) {
     const scaleLength = SCALES[scale].intervals.length
     const currentDegree = historyRef.current[0]?.degree ?? 0
     const mode = ['major', 'minor'].includes(scale) ? scale : 'major'
-    const weights = calcWeights(currentDegree, historyRef.current, mode, temperature, scaleLength)
+
+    const totalBeats = totalBeatsRef.current
+    const isMeasureStart = totalBeats % BEATS_PER_MEASURE === 0
+    const measureId = Math.floor(totalBeats / BEATS_PER_MEASURE)
+
+    // 小節頭では、フレーズテンプレートの骨格に沿った目標度数を設定する。
+    // フレーズを使い切ったら（直前と別の）テンプレートを選び直して塊ごとに変化させる。
+    let target = null
+    if (isMeasureStart) {
+      let phrase = phraseRef.current
+      if (!phrase || measureId - phrase.startMeasure >= phrase.seq.length) {
+        const tpl = pickPhraseTemplate(mode, scaleLength, phrase?.name)
+        phrase = { name: tpl.name, seq: tpl.seq, startMeasure: measureId }
+        phraseRef.current = phrase
+      }
+      target = phrase.seq[measureId - phrase.startMeasure] % scaleLength
+    }
+
+    const weights = calcWeights(currentDegree, historyRef.current, mode, temperature, scaleLength, target)
     const degree = weightedRandom(weights)
 
     // 選ばれた度数が定番進行の「次の一手」に一致していれば、その進行名を通知に載せる。
@@ -94,15 +113,14 @@ export function useChordSequencer(settings) {
     }
     cooldownRef.current = Math.max(0, cooldownRef.current - 1)
 
-    const totalBeats = totalBeatsRef.current
     const beats = pickBeats(totalBeats, temperature, enableMultiChord)
 
     const chord = buildChord(key, scale, degree, temperature)
     chord.id = idRef.current++
     chord.pattern = pattern
     chord.beats = beats
-    chord.isMeasureStart = totalBeats % BEATS_PER_MEASURE === 0
-    chord.measureId = Math.floor(totalBeats / BEATS_PER_MEASURE)
+    chord.isMeasureStart = isMeasureStart
+    chord.measureId = measureId
 
     totalBeatsRef.current = totalBeats + beats
     historyRef.current = trimHistory([chord, ...historyRef.current])
@@ -130,6 +148,7 @@ export function useChordSequencer(settings) {
       historyRef.current = []
       totalBeatsRef.current = 0
       cooldownRef.current = 0
+      phraseRef.current = null
       setHistory([])
       setCurrentChord(null)
       setDistribution([])
