@@ -56,6 +56,7 @@ export function useChordSequencer(settings) {
   const [playing, setPlaying] = useState(false)
   const [currentChord, setCurrentChord] = useState(null)
   const [history, setHistory] = useState([])
+  const [distribution, setDistribution] = useState([])
 
   const timerRef = useRef(null)
   const historyRef = useRef([])
@@ -106,10 +107,20 @@ export function useChordSequencer(settings) {
     totalBeatsRef.current = totalBeats + beats
     historyRef.current = trimHistory([chord, ...historyRef.current])
 
+    // 次のコードの確率分布を算出（ビジュアライザ用）。今鳴らしたコードを起点にした遷移重み。
+    const nextWeights = calcWeights(degree, historyRef.current, mode, temperature, scaleLength)
+    const total = nextWeights.reduce((a, b) => a + b, 0) || 1
+    const dist = nextWeights.map((w, d) => ({
+      degree: d,
+      name: buildChord(key, scale, d, 0).name, // 決定的なトライアド名をラベルに
+      prob: w / total,
+    }))
+
     const durSec = (60 / bpm) * beats
     playChord(chord.midis, durSec)
     setCurrentChord(chord)
     setHistory([...historyRef.current])
+    setDistribution(dist)
     timerRef.current = setTimeout(next, durSec * 1000)
   }
 
@@ -121,6 +132,7 @@ export function useChordSequencer(settings) {
       cooldownRef.current = 0
       setHistory([])
       setCurrentChord(null)
+      setDistribution([])
       setPlaying(false)
     } else {
       setPlaying(true)
@@ -133,5 +145,5 @@ export function useChordSequencer(settings) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing])
 
-  return { playing, currentChord, history, toggle }
+  return { playing, currentChord, history, distribution, toggle }
 }

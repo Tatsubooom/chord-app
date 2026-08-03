@@ -3,6 +3,7 @@ import './app.css'
 import { useChordSequencer } from './hooks/useChordSequencer'
 import ChordDisplay from './components/ChordDisplay'
 import ChordHistory from './components/ChordHistory'
+import ProbabilityMeter from './components/ProbabilityMeter'
 import TransportControls from './components/TransportControls'
 import WeightPanel from './components/WeightPanel'
 import ScaleLegend from './components/ScaleLegend'
@@ -14,7 +15,7 @@ export default function App() {
   const [temperature, setTemperature] = useState(0.3)
   const [enableMultiChord, setEnableMultiChord] = useState(true)
 
-  const { playing, currentChord, history, toggle } = useChordSequencer({
+  const { playing, currentChord, history, distribution, toggle } = useChordSequencer({
     key,
     scale,
     bpm,
@@ -26,6 +27,7 @@ export default function App() {
     <div>
       <ChordDisplay chord={currentChord} />
       <ChordHistory history={history} />
+      <ProbabilityMeter distribution={distribution} />
 
       <TransportControls
         playing={playing}

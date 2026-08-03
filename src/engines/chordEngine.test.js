@@ -61,15 +61,14 @@ test('buildChord emits roman numerals with correct case/suffix (current behavior
   assert.equal(triad('C', 'major', 6).roman, 'vii°')
 })
 
-test('buildChord keeps bass low and chord tones in the voice-leading window', () => {
+test('buildChord (triad, temp=0) has no added bass and stays in the voice-leading window', () => {
   const chord = triad('C', 'major', 0)
-  const [bass, ...tones] = chord.midis
-  assert.ok(bass >= 36 && bass <= 47, 'bass sits in C2..B2')
-  for (const m of tones) {
-    assert.ok(m >= 55 && m <= 66, `chord tone ${m} sits in G3..F#4`)
+  for (const m of chord.midis) {
+    assert.ok(m >= 55 && m <= 66, `tone ${m} sits in G3..F#4`)
   }
-  // 転回で音がユニーク & 昇順（ベースを除く）
-  assert.deepEqual(tones, [...tones].sort((a, b) => a - b))
+  // 音はユニーク & 昇順、トライアドの3音のみ（低音のルート重複なし）
+  assert.deepEqual(chord.midis, [...chord.midis].sort((a, b) => a - b))
+  assert.equal(chord.midis.length, 3)
 })
 
 test('degree wraps around the scale length', () => {

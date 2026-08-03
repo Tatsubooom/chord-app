@@ -58,35 +58,60 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   
   const rootIdx = NOTES.indexOf(key);
   const rootNoteName = NOTES[(rootIdx + def.root) % 12];
-  
-  // ベース音はC2(36)〜B2(47)の音域に固定して低音の濁りを防ぐ
-  const bassMidi = 36 + ((rootIdx + def.root) % 12);
+  const isDiatonic = intervals.length === 7;
 
   let offsets = [0, def.relThird, def.relFifth];
   let nameSuffix = (def.relThird === 3) ? 'm' : '';
-  if (def.relFifth === 6) nameSuffix = '°';
-  let tensionSuffix = '';
+  const isDim = def.relFifth === 6;
+  if (isDim) nameSuffix = '°';
 
   const tensionProb = Math.pow(temperature, 2);
-  const t7 = Math.min(tensionProb * 2.0, 1.0); 
 
+  // --- sus4: 3rd を完全4度に置換（dim以外）。長短の性質を失う ---
+  let susLabel = '';
+  if (!isDim && Math.random() < tensionProb * 0.35) {
+    offsets[1] = 5;
+    nameSuffix = '';
+    susLabel = 'sus4';
+  }
+
+  // --- 7th / 6th ---
+  let seventhLabel = '';
+  let has7 = false;
+  const t7 = Math.min(tensionProb * 2.0, 1.0);
   if (Math.random() < t7) {
     const s7 = def.relSeventh;
-    if (s7 >= 9 && s7 <= 11) {
-      offsets.push(s7);
-      if (s7 === 11) tensionSuffix = 'maj7';
-      else if (s7 === 10) tensionSuffix = '7';
-      else if (s7 === 9) tensionSuffix = '6';
-    }
+    if (s7 === 11) { offsets.push(11); seventhLabel = 'maj7'; has7 = true; }
+    else if (s7 === 10) { offsets.push(10); seventhLabel = '7'; has7 = true; }
+    else if (s7 === 9) { offsets.push(9); seventhLabel = '6'; } // 6thは厳密には7thではない
   }
+  const has6 = offsets.includes(9);
 
+  // --- 上部テンション (9 / 11 / 13) ---
+  const tensionParts = [];
+  // 9th
   if (Math.random() < tensionProb) {
     const n9 = def.relNinth % 12;
-    if (!offsets.includes(n9) && n9 !== 0) {
-      offsets.push(n9);
-      tensionSuffix += (tensionSuffix ? '(9)' : 'add9');
-    }
+    if (!offsets.includes(n9) && n9 !== 0) { offsets.push(n9); tensionParts.push('9'); }
   }
+  // 11th: メジャー3度とはぶつかるので major は #11、minor は natural 11。7音スケール・7th付き・sus無しのみ
+  if (isDiatonic && has7 && !susLabel && Math.random() < tensionProb * 0.5) {
+    const eleven = def.relThird === 4 ? 6 : 5;
+    if (!offsets.includes(eleven)) { offsets.push(eleven); tensionParts.push(def.relThird === 4 ? '#11' : '11'); }
+  }
+  // 13th: ドミナント7th上のみ。6thと衝突する音なので6th無し時のみ
+  if (isDiatonic && seventhLabel === '7' && !susLabel && !has6 && Math.random() < tensionProb * 0.4) {
+    offsets.push(9); tensionParts.push('13');
+  }
+
+  let extLabel = '';
+  if (tensionParts.length) {
+    // 7th等が無く 9th 単独なら add9 表記、それ以外は括弧でまとめる
+    if (!has7 && seventhLabel === '' && tensionParts.length === 1 && tensionParts[0] === '9') extLabel = 'add9';
+    else extLabel = '(' + tensionParts.join(',') + ')';
+  }
+
+  const tensionSuffix = seventhLabel + susLabel + extLabel;
 
   // Voice Leading（滑らかな繋がり）を実現するためのアルゴリズム
   // 構成音をすべて C4(60) に近い音域（G3(55)〜F#4(66)）に折り畳んで転回形を作る
@@ -96,10 +121,24 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
     if (midi > 66) midi -= 12; // G4以上なら1オクターブ下げてG3〜F#4に収める
     return midi;
   });
-
   const finalChordTones = Array.from(new Set(chordTones)).sort((a, b) => a - b);
-  // ベース音と和音を結合
-  const midis = [bassMidi, ...finalChordTones];
+
+  // --- 分数コード: 一定確率でベースを3rd/5thに置いた転回形にする ---
+  let slashLabel = '';
+  const bassMidis = [];
+  if (!susLabel && Math.random() < tensionProb * 0.5) {
+    const candidates = [offsets[1], offsets[2]].filter(o => o && o % 12 !== 0);
+    if (candidates.length) {
+      const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      const bassClass = (rootIdx + def.root + chosen) % 12;
+      let bassMidi = 48 + bassClass; // 和音域(55〜)より下に配置
+      while (bassMidi >= 55) bassMidi -= 12;
+      bassMidis.push(bassMidi);
+      slashLabel = '/' + NOTES[bassClass];
+    }
+  }
+
+  const midis = [...bassMidis, ...finalChordTones].sort((a, b) => a - b);
 
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   const baseRoman = romanNumerals[degree % 7] || (degree + 1).toString();
@@ -107,7 +146,7 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   const roman = (isMinor ? baseRoman.toLowerCase() : baseRoman) + nameSuffix + tensionSuffix;
 
   return {
-    name: rootNoteName + nameSuffix + tensionSuffix,
+    name: rootNoteName + nameSuffix + tensionSuffix + slashLabel,
     roman: roman,
     degree: degree % intervals.length,
     midis: midis,
