@@ -1,0 +1,184 @@
+/* 現在のコード表示 */
+.chord-display {
+  position: relative;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 定番進行ボーナス発生時に、コード表示から跳ね出す通知バッジ */
+.pattern-popup {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  z-index: 2;
+  pointer-events: none;
+  white-space: nowrap;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  box-shadow: var(--shadow);
+  transform-origin: center bottom;
+  animation: pattern-pop 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes pattern-pop {
+  0% {
+    transform: translate(-50%, 12px) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, -8px) scale(1.15);
+    opacity: 1;
+  }
+  30% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(-50%, -4px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -40px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* アニメーションを控えたいユーザー向け: バッジは静的に表示 */
+@media (prefers-reduced-motion: reduce) {
+  .pattern-popup {
+    animation: none;
+    transform: translate(-50%, 0);
+  }
+}
+.chord-display__name {
+  margin: 0;
+}
+.chord-display__notes {
+  font-size: 1.2em;
+  color: var(--text);
+  margin: 8px 0;
+}
+.chord-display__roman {
+  margin: 0;
+  font-size: 1.1em;
+}
+
+/* コード履歴（右から左へ流れる） */
+.chord-history {
+  display: flex;
+  gap: 16px;
+  flex-direction: row-reverse;
+  overflow-x: auto;
+  justify-content: center;
+  align-items: center;
+  margin: 30px 0;
+  min-height: 60px;
+}
+.chord-history__item {
+  white-space: nowrap;
+  text-align: center;
+}
+.chord-history__name {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+.chord-history__beats {
+  font-size: 0.6em;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-top: 6px;
+}
+.chord-history__divider {
+  color: var(--text-h);
+  font-weight: bold;
+  margin: 0 4px;
+}
+
+/* 再生コントロール */
+.transport {
+  margin: 20px 0;
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+.transport__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 生成パラメータ */
+.weight-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 300px;
+  margin: 0 auto;
+}
+.field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.field__label {
+  flex: 0 0 64px;
+  text-align: left;
+  font-size: 0.85em;
+  color: var(--text);
+}
+.field select,
+.field input[type='range'] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.field__value {
+  flex: 0 0 64px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* フォーム要素の最小限の統一（色は既存テーマ変数のみ使用） */
+button,
+select {
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+button:hover,
+select:hover {
+  border-color: var(--accent-border);
+}
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input[type='range'],
+input[type='checkbox'] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* スケール度数の凡例 */
+.scale-legend {
+  margin-top: 30px;
+  text-align: center;
+}
+.scale-legend__item {
+  margin-bottom: 4px;
+  color: var(--text);
+}

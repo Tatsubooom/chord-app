@@ -1,16 +1,46 @@
-# React + Vite
+# chord-app
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ランダムなコード進行が確率的に流れ続ける Web アプリのモックアップ。
+キー / スケール / BPM / 多様性（temperature）を変えながら、マルコフ遷移＋定番進行パターンに基づいてコードを生成し、Web Audio API で再生します。
 
-Currently, two official plugins are available:
+## 技術スタック
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + Vite 8（JS/JSX）
+- Web Audio API（外部音源なし・オシレーター合成）
+- GitHub Pages へ Actions で自動デプロイ
 
-## React Compiler
+## 開発
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Docker（推奨）
+docker compose up   # http://localhost:5173
 
-## Expanding the ESLint configuration
+# もしくはローカルに Node 20+
+npm install
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+その他: `npm run build` / `npm run preview` / `npm run lint`
+
+## 構成
+
+```
+src/
+  App.jsx                    画面の組み立て（各コンポーネントを配置するだけ）
+  constants.js               キー一覧・拍/小節などの定数
+  hooks/
+    useChordSequencer.js     再生ループ・履歴管理（スケジューラ）
+  engines/
+    chordEngine.js           スケール定義 / 度数→コード変換 / ボイスリーディング
+    weightEngine.js          マルコフ遷移表 + 進行パターンボーナス + 代理コード
+    audioEngine.js           Web Audio によるコード再生
+  components/
+    ChordDisplay.jsx         現在のコード
+    ChordHistory.jsx         流れていくコード履歴
+    TransportControls.jsx    再生 / Multi-Chord 切り替え
+    WeightPanel.jsx          キー / スケール / BPM / temperature
+    ScaleLegend.jsx          スケール各度数の凡例
+```
+
+生成の流れ: `useChordSequencer` が `weightEngine` で次の度数の重みを計算 → 抽選 →
+`chordEngine` でコード化 → `audioEngine` で発音、を BPM に合わせて `setTimeout` で繰り返します。

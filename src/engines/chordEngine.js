@@ -19,8 +19,12 @@ function buildDefs(intervals) {
   
   return intervals.map((_, i) => {
     const root = intervals[i];
+    // 3rd/5th/7th/9th の理想音程(半音)に最も近いスケール構成音を、ルートから3オクターブ内で探す。
+    // 7音スケールなら理論通りのダイアトニックコード、ペンタでは「最寄りのスケール音」になる。
+    // 戻り値は1オクターブ内の相対半音。末尾の `|| %24` は、9th等がオクターブ上の同音(=0)へ
+    // 潰れて構成音から消えるのを防ぐための保険。
     const getRel = (targetDegree) => {
-      const targets = { 2: 3.5, 4: 7, 6: 10.5, 8: 14 }; 
+      const targets = { 2: 3.5, 4: 7, 6: 10.5, 8: 14 };
       const targetSemitone = targets[targetDegree];
       let bestNote = intervals[0];
       let minDiff = 100;

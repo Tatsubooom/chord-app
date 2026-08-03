@@ -72,7 +72,7 @@ const SUBSTITUTES = {
 
 function isSimilar(degreeA, degreeB, scaleLength) {
   if (degreeA === degreeB) return true;
-  // ペンタトニック（5音）の場合は代理コードの判定を行わず厳密に比較する
+  // 7音スケールのみ代理コードで一致判定する（ペンタトニックは厳密比較のまま）
   if (scaleLength === 7) {
     const subs = SUBSTITUTES[degreeB % 7];
     return subs ? subs.includes(degreeA % 7) : false;
@@ -80,32 +80,55 @@ function isSimilar(degreeA, degreeB, scaleLength) {
   return false; 
 }
 
+// スケール長に応じて有効なテーブル名（major/minor/majorPenta/minorPenta）を決める
+function resolveMode(mode, scaleLength) {
+  if (scaleLength === 5) return mode.startsWith('minor') ? 'minorPenta' : 'majorPenta';
+  return mode;
+}
+
+// 直近履歴が定番進行の途中に一致していれば、次に来るべき度数へボーナスを加える。
+// bonus: 度数ごとの加点、contributors: 度数ごとに寄与したパターン({name, matchLen, value})の一覧。
 function calcPatternBonus(history, mode, temperature, scaleLength) {
   const bonus = new Array(scaleLength).fill(0);
-  if (!history.length) return bonus;
+  const contributors = Array.from({ length: scaleLength }, () => []);
+  if (!history.length) return { bonus, contributors };
 
   const recent = history.slice(0, 4).map(c => c.degree).reverse();
   // ペンタトニックモードにも対応
   const patterns = PATTERNS[mode] || PATTERNS.major;
 
-  patterns.forEach(({ seq, bonus: value }) => {
+  patterns.forEach(({ name, seq, bonus: value }) => {
     for (let i = 0; i < seq.length - 1; i++) {
       for (let matchLen = 1; matchLen <= Math.min(recent.length, 3); matchLen++) {
         const subRecent = recent.slice(-matchLen);
         const subPattern = seq.slice(i, i + matchLen);
-        
+
         if (subRecent.every((d, idx) => isSimilar(d, subPattern[idx], scaleLength))) {
           const nextIdx = i + matchLen;
           if (nextIdx < seq.length) {
             const targetDegree = seq[nextIdx] % scaleLength;
-            bonus[targetDegree] += value * (1.8 - temperature);
+            const added = value * (1.8 - temperature);
+            bonus[targetDegree] += added;
+            // isFinal: この一手でパターンが最後まで完成する（＝進行の締め）
+            contributors[targetDegree].push({
+              name,
+              matchLen,
+              value: added,
+              isFinal: nextIdx === seq.length - 1,
+            });
           }
         }
       }
     }
   });
 
-  return bonus;
+  return { bonus, contributors };
+}
+
+// 与えられた履歴に対し、各度数に寄与した定番進行パターンの一覧を返す（UI通知用）。
+export function getPatternMatches(history, mode, temperature, scaleLength = 7) {
+  const effectiveMode = resolveMode(mode, scaleLength);
+  return calcPatternBonus(history, effectiveMode, temperature, scaleLength).contributors;
 }
 
 export function weightedRandom(weights) {
@@ -121,15 +144,12 @@ export function weightedRandom(weights) {
 
 export function calcWeights(currentDegree, history, mode, temperature, scaleLength = 7) {
   // スケール長に合わせて適切なテーブルを選択
-  let effectiveMode = mode;
-  if (scaleLength === 5) {
-    effectiveMode = mode.startsWith('minor') ? 'minorPenta' : 'majorPenta';
-  }
-  
+  const effectiveMode = resolveMode(mode, scaleLength);
+
   const table = TRANSITION[effectiveMode] || TRANSITION.major;
   const harmonic = [...(table[currentDegree % scaleLength] || new Array(scaleLength).fill(1))];
-  
-  const patternBonus = calcPatternBonus(history, effectiveMode, temperature, scaleLength);
+
+  const { bonus: patternBonus } = calcPatternBonus(history, effectiveMode, temperature, scaleLength);
   const exponent = 2.5 - (temperature * 2.0);
   
   let finalWeights = harmonic.map((w, i) => {
