@@ -1,3 +1,60 @@
+/* 固定幅の枠をやめて画面幅に追従させる（.app が最大幅を決める） */
+#root {
+  width: 100%;
+  max-width: 100%;
+  border-inline: none;
+}
+
+/* 全体コンテナ（画面幅に応じて中身を広く使い、スマホでは左右に余白） */
+.app {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 8px 24px 40px;
+  box-sizing: border-box;
+}
+@media (max-width: 640px) {
+  .app {
+    padding: 4px 14px 32px;
+  }
+}
+
+/* コード表示＋履歴の背景に薄いピアノを敷くステージ */
+.stage {
+  position: relative;
+}
+.stage > *:not(.piano) {
+  position: relative;
+  z-index: 1;
+}
+.piano {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.piano__white {
+  fill: transparent;
+  stroke: var(--border);
+  stroke-width: 0.4;
+  transition: fill-opacity 0.25s ease;
+}
+.piano__black {
+  fill: var(--text-h);
+  fill-opacity: 0.05;
+  transition: fill-opacity 0.25s ease;
+}
+.piano__white.is-on {
+  fill: var(--accent);
+  fill-opacity: 0.18;
+}
+.piano__black.is-on {
+  fill: var(--accent);
+  fill-opacity: 0.55;
+}
+
 /* 現在のコード表示 */
 .chord-display {
   position: relative;
@@ -95,7 +152,7 @@
 /* 次コード確率メーター（昔のWindowsボリュームバー風の segmented VU メーター） */
 .meter {
   margin: 24px auto 8px;
-  max-width: 560px;
+  max-width: 100%;
 }
 .meter__caption {
   font-size: 0.75em;
@@ -182,8 +239,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 300px;
-  margin: 0 auto;
+  width: min(380px, 100%);
+  margin: 6px auto 0;
 }
 .field {
   display: flex;
@@ -236,22 +293,18 @@ input[type='checkbox'] {
   cursor: pointer;
 }
 
-/* 設定パネル（開閉可能） */
-.settings {
-  margin-top: 18px;
-}
-.settings__toggle {
+.transport__settings {
   font-size: 0.85em;
   color: var(--text);
-  background: transparent;
-  border: 1px solid var(--border);
-  padding: 5px 14px;
-  margin-bottom: 14px;
+}
+.field__note {
+  font-size: 0.78em;
+  color: var(--text);
 }
 
 /* 下部の統合リードアウト（メーター＋装飾確率） */
 .readout {
-  max-width: 560px;
+  max-width: min(680px, 100%);
   margin: 30px auto 8px;
 }
 .readout .meter {

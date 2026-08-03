@@ -11,9 +11,21 @@ export default function WeightPanel({
   onBpmChange,
   temperature,
   onTemperatureChange,
+  enableMultiChord,
+  onToggleMultiChord,
 }) {
   return (
     <div className="weight-panel">
+      <label className="field">
+        <span className="field__label">複数コード</span>
+        <input
+          type="checkbox"
+          checked={enableMultiChord}
+          onChange={e => onToggleMultiChord(e.target.checked)}
+        />
+        <span className="field__note">Multi-Chord（小節を分割）</span>
+      </label>
+
       <label className="field">
         <span className="field__label">Key</span>
         <select value={keyName} onChange={e => onKeyChange(e.target.value)}>

@@ -3,6 +3,7 @@ import './app.css'
 import { useChordSequencer } from './hooks/useChordSequencer'
 import ChordDisplay from './components/ChordDisplay'
 import ChordHistory from './components/ChordHistory'
+import Piano from './components/Piano'
 import ProbabilityMeter from './components/ProbabilityMeter'
 import TransportControls from './components/TransportControls'
 import WeightPanel from './components/WeightPanel'
@@ -25,39 +26,34 @@ export default function App() {
   })
 
   return (
-    <div>
-      <ChordDisplay chord={currentChord} />
-      <ChordHistory history={history} />
+    <div className="app">
+      <div className="stage">
+        <Piano activeMidis={currentChord?.midis || []} />
+        <ChordDisplay chord={currentChord} />
+        <ChordHistory history={history} />
+      </div>
 
       <TransportControls
         playing={playing}
         onToggle={toggle}
-        enableMultiChord={enableMultiChord}
-        onToggleMultiChord={setEnableMultiChord}
+        showSettings={showSettings}
+        onToggleSettings={() => setShowSettings(s => !s)}
       />
 
-      <div className="settings">
-        <button
-          className="settings__toggle"
-          onClick={() => setShowSettings(s => !s)}
-          aria-expanded={showSettings}
-        >
-          {showSettings ? '設定を閉じる ▲' : '設定を開く ▼'}
-        </button>
-
-        {showSettings && (
-          <WeightPanel
-            keyName={key}
-            onKeyChange={setKey}
-            scale={scale}
-            onScaleChange={setScale}
-            bpm={bpm}
-            onBpmChange={setBpm}
-            temperature={temperature}
-            onTemperatureChange={setTemperature}
-          />
-        )}
-      </div>
+      {showSettings && (
+        <WeightPanel
+          keyName={key}
+          onKeyChange={setKey}
+          scale={scale}
+          onScaleChange={setScale}
+          bpm={bpm}
+          onBpmChange={setBpm}
+          temperature={temperature}
+          onTemperatureChange={setTemperature}
+          enableMultiChord={enableMultiChord}
+          onToggleMultiChord={setEnableMultiChord}
+        />
+      )}
 
       <div className="readout">
         <ProbabilityMeter distribution={distribution} />

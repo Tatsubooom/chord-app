@@ -1,15 +1,14 @@
-export default function TransportControls({ playing, onToggle, enableMultiChord, onToggleMultiChord }) {
+export default function TransportControls({ playing, onToggle, showSettings, onToggleSettings }) {
   return (
     <div className="transport">
       <button onClick={onToggle}>{playing ? 'Stop' : 'Play'}</button>
-      <label className="transport__checkbox">
-        <input
-          type="checkbox"
-          checked={enableMultiChord}
-          onChange={e => onToggleMultiChord(e.target.checked)}
-        />
-        Multi-Chord (複数コード)
-      </label>
+      <button
+        className="transport__settings"
+        onClick={onToggleSettings}
+        aria-expanded={showSettings}
+      >
+        {showSettings ? '設定を閉じる ▲' : '設定を開く ▼'}
+      </button>
     </div>
   )
 }
