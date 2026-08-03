@@ -7,6 +7,30 @@ export const SCALES = {
   minorPenta: { label: 'Minor Pentatonic', intervals: [0, 3, 5, 7, 10] },
 };
 
+// 装飾（テンション / sus / 分数）の付与確率の係数。実際の確率は temperature^2 * 係数（上限1）。
+const DECORATION_COEF = {
+  seventh: 2.0,
+  ninth: 1.0,
+  eleventh: 0.5,
+  thirteenth: 0.4,
+  sus4: 0.35,
+  slash: 0.5,
+};
+
+// 各装飾の発生確率（temperature依存）を UI 表示用にまとめて返す
+export function getDecorationChances(temperature) {
+  const t = Math.pow(temperature, 2);
+  const clamp = (x) => Math.min(x, 1);
+  return [
+    { key: '7th', prob: clamp(t * DECORATION_COEF.seventh) },
+    { key: '9th', prob: clamp(t * DECORATION_COEF.ninth) },
+    { key: '11th', prob: clamp(t * DECORATION_COEF.eleventh) },
+    { key: '13th', prob: clamp(t * DECORATION_COEF.thirteenth) },
+    { key: 'sus4', prob: clamp(t * DECORATION_COEF.sus4) },
+    { key: '分数 (slash)', prob: clamp(t * DECORATION_COEF.slash) },
+  ];
+}
+
 export function midiToNoteName(midi) {
   const noteIdx = midi % 12;
   const octave = Math.floor(midi / 12) - 1;
@@ -69,7 +93,7 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
 
   // --- sus4: 3rd を完全4度に置換（dim以外）。長短の性質を失う ---
   let susLabel = '';
-  if (!isDim && Math.random() < tensionProb * 0.35) {
+  if (!isDim && Math.random() < tensionProb * DECORATION_COEF.sus4) {
     offsets[1] = 5;
     nameSuffix = '';
     susLabel = 'sus4';
@@ -78,7 +102,7 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   // --- 7th / 6th ---
   let seventhLabel = '';
   let has7 = false;
-  const t7 = Math.min(tensionProb * 2.0, 1.0);
+  const t7 = Math.min(tensionProb * DECORATION_COEF.seventh, 1.0);
   if (Math.random() < t7) {
     const s7 = def.relSeventh;
     if (s7 === 11) { offsets.push(11); seventhLabel = 'maj7'; has7 = true; }
@@ -90,17 +114,17 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   // --- 上部テンション (9 / 11 / 13) ---
   const tensionParts = [];
   // 9th
-  if (Math.random() < tensionProb) {
+  if (Math.random() < tensionProb * DECORATION_COEF.ninth) {
     const n9 = def.relNinth % 12;
     if (!offsets.includes(n9) && n9 !== 0) { offsets.push(n9); tensionParts.push('9'); }
   }
   // 11th: メジャー3度とはぶつかるので major は #11、minor は natural 11。7音スケール・7th付き・sus無しのみ
-  if (isDiatonic && has7 && !susLabel && Math.random() < tensionProb * 0.5) {
+  if (isDiatonic && has7 && !susLabel && Math.random() < tensionProb * DECORATION_COEF.eleventh) {
     const eleven = def.relThird === 4 ? 6 : 5;
     if (!offsets.includes(eleven)) { offsets.push(eleven); tensionParts.push(def.relThird === 4 ? '#11' : '11'); }
   }
   // 13th: ドミナント7th上のみ。6thと衝突する音なので6th無し時のみ
-  if (isDiatonic && seventhLabel === '7' && !susLabel && !has6 && Math.random() < tensionProb * 0.4) {
+  if (isDiatonic && seventhLabel === '7' && !susLabel && !has6 && Math.random() < tensionProb * DECORATION_COEF.thirteenth) {
     offsets.push(9); tensionParts.push('13');
   }
 
@@ -126,7 +150,7 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   // --- 分数コード: 一定確率でベースを3rd/5thに置いた転回形にする ---
   let slashLabel = '';
   const bassMidis = [];
-  if (!susLabel && Math.random() < tensionProb * 0.5) {
+  if (!susLabel && Math.random() < tensionProb * DECORATION_COEF.slash) {
     const candidates = [offsets[1], offsets[2]].filter(o => o && o % 12 !== 0);
     if (candidates.length) {
       const chosen = candidates[Math.floor(Math.random() * candidates.length)];

@@ -124,7 +124,7 @@
 .meter__bar {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   width: 100%;
   max-width: 34px;
   padding: 4px;
@@ -133,24 +133,15 @@
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 .meter__seg {
-  height: 8px;
-  border-radius: 2px;
-  /* 消灯時: ほぼ黒くくすんだLED */
-  background: #20242e;
-  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+  height: 9px;
+  border-radius: 1px;
+  /* 消灯時: くすんだセグメント */
+  background: #262b36;
+  transition: background-color 0.15s ease;
 }
-/* 点灯: 下段=緑 / 中段=黄 / 上段=赤 */
-.meter__seg--g.is-on {
-  background: #35d24a;
-  box-shadow: 0 0 5px rgba(53, 210, 74, 0.7);
-}
-.meter__seg--y.is-on {
-  background: #ffd23e;
-  box-shadow: 0 0 5px rgba(255, 210, 62, 0.7);
-}
-.meter__seg--r.is-on {
-  background: #ff4d4d;
-  box-shadow: 0 0 6px rgba(255, 77, 77, 0.8);
+/* 点灯: モノクロ（白）で下から積み上がる */
+.meter__seg.is-on {
+  background: #f4f5f7;
 }
 .meter__pct {
   font-size: 0.72em;
@@ -245,12 +236,64 @@ input[type='checkbox'] {
   cursor: pointer;
 }
 
-/* スケール度数の凡例 */
-.scale-legend {
-  margin-top: 30px;
-  text-align: center;
+/* 設定パネル（開閉可能） */
+.settings {
+  margin-top: 18px;
 }
-.scale-legend__item {
-  margin-bottom: 4px;
+.settings__toggle {
+  font-size: 0.85em;
   color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 5px 14px;
+  margin-bottom: 14px;
+}
+
+/* 装飾の発生確率パネル（カメラの詳細情報のように淡々と） */
+.detail {
+  max-width: 420px;
+  margin: 28px auto 8px;
+  text-align: left;
+}
+.detail__caption {
+  font-size: 0.72em;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.detail__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.detail__row {
+  display: grid;
+  grid-template-columns: 92px 1fr 40px;
+  align-items: center;
+  gap: 10px;
+}
+.detail__label {
+  font-size: 0.8em;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.detail__track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+.detail__fill {
+  display: block;
+  height: 100%;
+  background: var(--text-h);
+  transition: width 0.2s ease;
+}
+.detail__val {
+  font-size: 0.78em;
+  text-align: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }

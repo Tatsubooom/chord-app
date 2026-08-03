@@ -1,14 +1,6 @@
 const SEGMENTS = 12
 
-// セグメントの色帯（下=緑, 中=黄, 上=赤）— 昔のWindowsボリュームメーター風
-function segColor(level) {
-  const ratio = level / SEGMENTS
-  if (ratio >= 0.83) return 'r'
-  if (ratio >= 0.58) return 'y'
-  return 'g'
-}
-
-// 次に来るコードの確率をライブ表示するサウンドヴィジュアライザー風メーター
+// 次に来るコードの確率をライブ表示する、棒が積み上がる segmented メーター
 export default function ProbabilityMeter({ distribution }) {
   if (!distribution.length) return null
 
@@ -28,14 +20,11 @@ export default function ProbabilityMeter({ distribution }) {
             >
               <div className="meter__bar">
                 {Array.from({ length: SEGMENTS }).map((_, i) => {
-                  const level = SEGMENTS - i // 上から下へ: 上ほど高レベル
-                  const on = level <= lit
+                  const level = SEGMENTS - i // 上から下へ。下から積み上がる
                   return (
                     <span
                       key={i}
-                      className={
-                        'meter__seg meter__seg--' + segColor(level) + (on ? ' is-on' : '')
-                      }
+                      className={'meter__seg' + (level <= lit ? ' is-on' : '')}
                     />
                   )
                 })}

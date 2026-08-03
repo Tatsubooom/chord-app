@@ -6,7 +6,7 @@ import ChordHistory from './components/ChordHistory'
 import ProbabilityMeter from './components/ProbabilityMeter'
 import TransportControls from './components/TransportControls'
 import WeightPanel from './components/WeightPanel'
-import ScaleLegend from './components/ScaleLegend'
+import DecorationInfo from './components/DecorationInfo'
 
 export default function App() {
   const [key, setKey] = useState('C')
@@ -14,6 +14,7 @@ export default function App() {
   const [bpm, setBpm] = useState(90)
   const [temperature, setTemperature] = useState(0.3)
   const [enableMultiChord, setEnableMultiChord] = useState(true)
+  const [showSettings, setShowSettings] = useState(true)
 
   const { playing, currentChord, history, distribution, toggle } = useChordSequencer({
     key,
@@ -36,18 +37,30 @@ export default function App() {
         onToggleMultiChord={setEnableMultiChord}
       />
 
-      <WeightPanel
-        keyName={key}
-        onKeyChange={setKey}
-        scale={scale}
-        onScaleChange={setScale}
-        bpm={bpm}
-        onBpmChange={setBpm}
-        temperature={temperature}
-        onTemperatureChange={setTemperature}
-      />
+      <div className="settings">
+        <button
+          className="settings__toggle"
+          onClick={() => setShowSettings(s => !s)}
+          aria-expanded={showSettings}
+        >
+          {showSettings ? '設定を閉じる ▲' : '設定を開く ▼'}
+        </button>
 
-      <ScaleLegend scale={scale} />
+        {showSettings && (
+          <WeightPanel
+            keyName={key}
+            onKeyChange={setKey}
+            scale={scale}
+            onScaleChange={setScale}
+            bpm={bpm}
+            onBpmChange={setBpm}
+            temperature={temperature}
+            onTemperatureChange={setTemperature}
+          />
+        )}
+      </div>
+
+      <DecorationInfo temperature={temperature} enableMultiChord={enableMultiChord} />
     </div>
   )
 }
