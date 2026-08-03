@@ -181,7 +181,7 @@
 .meter__bar {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   width: 100%;
   max-width: 34px;
   padding: 4px;
@@ -190,7 +190,7 @@
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 .meter__seg {
-  height: 9px;
+  height: 6px;
   border-radius: 1px;
   /* 消灯時: くすんだセグメント */
   background: #262b36;
@@ -323,27 +323,17 @@ input[type='checkbox'] {
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border);
 }
+/* カード枠をやめて、領域だけを簡易な線で囲う（背景は透明のまま溶け込ませる） */
 .detail__row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 8px;
+  gap: 8px 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 .detail__item {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  padding: 3px 9px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.detail__label {
-  font-size: 0.78em;
-  color: var(--text);
-}
-.detail__val {
   font-size: 0.82em;
-  font-weight: bold;
   color: var(--text-h);
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }

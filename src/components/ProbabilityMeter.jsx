@@ -1,4 +1,4 @@
-const SEGMENTS = 12
+const SEGMENTS = 18
 
 // 次に来るコードの確率をライブ表示する、棒が積み上がる segmented メーター
 export default function ProbabilityMeter({ distribution }) {

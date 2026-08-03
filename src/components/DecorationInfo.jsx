@@ -19,9 +19,9 @@ export default function DecorationInfo({ temperature, enableMultiChord }) {
       </div>
       <div className="detail__row">
         {rows.map(r => (
-          <span className="detail__item" key={r.key}>
-            <span className="detail__label">{r.key}</span>
-            <span className="detail__val">{Math.round(r.prob * 100)}%</span>
+          // %は出さず、起きやすさを不透明度で淡く表現
+          <span className="detail__item" key={r.key} style={{ opacity: 0.35 + r.prob * 0.65 }}>
+            {r.key}
           </span>
         ))}
       </div>
