@@ -22,8 +22,8 @@ export default function WeightPanel({
   waveform,
   onWaveformChange,
 }) {
-  // 速さは刻み/アルペジオのときだけ効く
-  const showSpeed = playStyle === 'comp' || playStyle === 'arpeggio'
+  // 速さは刻み/アルペジオ/積み上げのときだけ効く
+  const showSpeed = playStyle === 'comp' || playStyle === 'arpeggio' || playStyle === 'buildup'
 
   return (
     <div className="weight-panel">
@@ -69,7 +69,7 @@ export default function WeightPanel({
           checked={enableMultiChord}
           onChange={e => onToggleMultiChord(e.target.checked)}
         />
-        <span className="field__note">Multi-Chord（小節を分割）</span>
+        <span className="field__note">小節を分割</span>
       </label>
 
       <label className="field">
@@ -79,7 +79,7 @@ export default function WeightPanel({
           checked={enableSubs}
           onChange={e => onToggleSubs(e.target.checked)}
         />
-        <span className="field__note">セカンダリードミナント / 借用和音</span>
+        <span className="field__note">セカンダリー / 借用</span>
       </label>
 
       <label className="field">

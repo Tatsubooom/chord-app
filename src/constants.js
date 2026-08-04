@@ -5,6 +5,7 @@ export const PLAY_STYLES = [
   { value: 'block', label: 'ブロック（一斉）' },
   { value: 'comp', label: '刻み（バッキング）' },
   { value: 'arpeggio', label: 'アルペジオ（分散）' },
+  { value: 'buildup', label: '積み上げ（→和音）' },
 ]
 
 // 刻み・アルペジオの速さ（1拍あたりの分割数 div。非線形）
