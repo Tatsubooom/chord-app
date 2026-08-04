@@ -2,6 +2,7 @@
 
 ランダムなコード進行が確率的に流れ続ける Web アプリのモックアップ。
 キー / スケール / BPM / 多様性（temperature）を変えながら、マルコフ遷移＋定番進行パターンに基づいてコードを生成し、Web Audio API で再生します。
+デプロイ先は[こちら](https://tatsubooom.github.io/chord-app/)
 
 ## 技術スタック
 
