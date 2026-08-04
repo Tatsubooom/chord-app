@@ -71,7 +71,7 @@ export function useChordSequencer(settings) {
   }, [settings])
 
   function next() {
-    const { key, scale, bpm, temperature, enableMultiChord } = settingsRef.current
+    const { key, scale, bpm, temperature, enableMultiChord, playStyle, enableSubs, waveform } = settingsRef.current
 
     const scaleLength = SCALES[scale].intervals.length
     const currentDegree = historyRef.current[0]?.degree ?? 0
@@ -115,7 +115,7 @@ export function useChordSequencer(settings) {
 
     const beats = pickBeats(totalBeats, temperature, enableMultiChord)
 
-    const chord = buildChord(key, scale, degree, temperature)
+    const chord = buildChord(key, scale, degree, temperature, enableSubs)
     chord.id = idRef.current++
     chord.pattern = pattern
     chord.beats = beats
@@ -135,7 +135,7 @@ export function useChordSequencer(settings) {
     }))
 
     const durSec = (60 / bpm) * beats
-    playChord(chord.midis, durSec)
+    playChord(chord.midis, durSec, playStyle, bpm, waveform)
     setCurrentChord(chord)
     setHistory([...historyRef.current])
     setDistribution(dist)

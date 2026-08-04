@@ -1,5 +1,20 @@
 export const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
+// 演奏スタイル（コードの鳴らし方）
+export const PLAY_STYLES = [
+  { value: 'block', label: 'ブロック（一斉）' },
+  { value: 'comp', label: '刻み（バッキング）' },
+  { value: 'arpeggio', label: 'アルペジオ（分散）' },
+]
+
+// 音色（オシレータの波形）
+export const WAVEFORMS = [
+  { value: 'triangle', label: '三角波（やわらか）' },
+  { value: 'sine', label: 'サイン波（ピュア）' },
+  { value: 'square', label: '矩形波（レトロ）' },
+  { value: 'sawtooth', label: 'ノコギリ波（明るい）' },
+]
+
 // 1小節の拍数
 export const BEATS_PER_MEASURE = 4
 // 履歴として保持する拍数（8小節ぶん）

@@ -17,6 +17,33 @@ const DECORATION_COEF = {
   slash: 0.5,
 };
 
+// 非ダイアトニックの代理コード（セカンダリードミナント / 借用和音）。
+// 同じ度数スロットは保ったまま、コードの性質を半音単位で差し替える。
+//   third: 3rd の相対半音（3=短3度→マイナー / 4=長3度→メジャー）
+//   dom7 : true なら ♭7 を必ず付与してドミナント7thにする（セカンダリードミナント）
+const SUBSTITUTIONS = {
+  major: {
+    0: [{ third: 4, dom7: true }],  // I7   = V7/IV
+    1: [{ third: 4, dom7: true }],  // II7  = V7/V
+    2: [{ third: 4, dom7: true }],  // III7 = V7/vi
+    3: [{ third: 3, dom7: false }], // iv   借用（同主短調のサブドミナント）
+    5: [{ third: 4, dom7: true }],  // VI7  = V7/ii
+  },
+  minor: {
+    3: [{ third: 4, dom7: false }], // IV   ドリアン借用
+    4: [{ third: 4, dom7: true }],  // V7   和声的短音階のドミナント
+  },
+};
+
+// 代理コードの発生確率係数（enableSubs 有効時: temperature に比例）
+const SUBSTITUTE_COEF = 0.55;
+
+// 代理コード（非ダイアトニック）の発生確率。無効時や temperature=0 では 0（＝決定的）。
+export function getSubstituteChance(temperature, enableSubs) {
+  if (!enableSubs) return 0;
+  return Math.min(temperature * SUBSTITUTE_COEF, 0.6);
+}
+
 // 各装飾の発生確率（temperature依存）を UI 表示用にまとめて返す
 export function getDecorationChances(temperature) {
   const t = Math.pow(temperature, 2);
@@ -74,7 +101,7 @@ function buildDefs(intervals) {
   });
 }
 
-export function buildChord(key, scaleName, degree, temperature = 0.5) {
+export function buildChord(key, scaleName, degree, temperature = 0.5, enableSubs = false) {
   const scaleData = SCALES[scaleName] || SCALES.major;
   const intervals = scaleData.intervals;
   const defs = buildDefs(intervals);
@@ -83,17 +110,30 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   const rootIdx = NOTES.indexOf(key);
   const rootNoteName = NOTES[(rootIdx + def.root) % 12];
   const isDiatonic = intervals.length === 7;
-
-  let offsets = [0, def.relThird, def.relFifth];
-  let nameSuffix = (def.relThird === 3) ? 'm' : '';
   const isDim = def.relFifth === 6;
+
+  // --- 代理コード（非ダイアトニック）: dim 以外で、確率的にコードの性質を差し替える ---
+  const subMode = scaleName === 'major' ? 'major' : scaleName === 'minor' ? 'minor' : null;
+  let workThird = def.relThird;
+  let forcedDom7 = false;
+  if (subMode && !isDim && Math.random() < getSubstituteChance(temperature, enableSubs)) {
+    const opts = SUBSTITUTIONS[subMode][degree % 7];
+    if (opts) {
+      const s = opts[Math.floor(Math.random() * opts.length)];
+      workThird = s.third;
+      forcedDom7 = s.dom7;
+    }
+  }
+
+  let offsets = [0, workThird, def.relFifth];
+  let nameSuffix = (workThird === 3) ? 'm' : '';
   if (isDim) nameSuffix = '°';
 
   const tensionProb = Math.pow(temperature, 2);
 
   // --- sus4: 3rd を完全4度に置換（dim以外）。長短の性質を失う ---
   let susLabel = '';
-  if (!isDim && Math.random() < tensionProb * DECORATION_COEF.sus4) {
+  if (!isDim && !forcedDom7 && Math.random() < tensionProb * DECORATION_COEF.sus4) {
     offsets[1] = 5;
     nameSuffix = '';
     susLabel = 'sus4';
@@ -102,12 +142,17 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   // --- 7th / 6th ---
   let seventhLabel = '';
   let has7 = false;
-  const t7 = Math.min(tensionProb * DECORATION_COEF.seventh, 1.0);
-  if (Math.random() < t7) {
-    const s7 = def.relSeventh;
-    if (s7 === 11) { offsets.push(11); seventhLabel = 'maj7'; has7 = true; }
-    else if (s7 === 10) { offsets.push(10); seventhLabel = '7'; has7 = true; }
-    else if (s7 === 9) { offsets.push(9); seventhLabel = '6'; } // 6thは厳密には7thではない
+  if (forcedDom7) {
+    // セカンダリードミナントは ♭7 を必ず持つ
+    offsets.push(10); seventhLabel = '7'; has7 = true;
+  } else {
+    const t7 = Math.min(tensionProb * DECORATION_COEF.seventh, 1.0);
+    if (Math.random() < t7) {
+      const s7 = def.relSeventh;
+      if (s7 === 11) { offsets.push(11); seventhLabel = 'maj7'; has7 = true; }
+      else if (s7 === 10) { offsets.push(10); seventhLabel = '7'; has7 = true; }
+      else if (s7 === 9) { offsets.push(9); seventhLabel = '6'; } // 6thは厳密には7thではない
+    }
   }
   const has6 = offsets.includes(9);
 
@@ -120,7 +165,7 @@ export function buildChord(key, scaleName, degree, temperature = 0.5) {
   }
   // 11th: メジャー3度とはぶつかるので major は #11、minor は natural 11。7音スケール・7th付き・sus無しのみ
   if (isDiatonic && has7 && !susLabel && Math.random() < tensionProb * DECORATION_COEF.eleventh) {
-    const eleven = def.relThird === 4 ? 6 : 5;
+    const eleven = workThird === 4 ? 6 : 5;
     if (!offsets.includes(eleven)) { offsets.push(eleven); tensionParts.push(def.relThird === 4 ? '#11' : '11'); }
   }
   // 13th: ドミナント7th上のみ。6thと衝突する音なので6th無し時のみ

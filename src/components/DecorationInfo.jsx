@@ -1,14 +1,15 @@
-import { getDecorationChances } from '../engines/chordEngine'
+import { getDecorationChances, getSubstituteChance } from '../engines/chordEngine'
 import { MEASURE_SPLIT_SCALE } from '../constants'
 
 // テンション/装飾/分割の発生確率を、横書きで淡々と一列に並べるパネル
-export default function DecorationInfo({ temperature, enableMultiChord }) {
+export default function DecorationInfo({ temperature, enableMultiChord, enableSubs }) {
   const splitProb = enableMultiChord
     ? Math.min(Math.pow(temperature, 2) * MEASURE_SPLIT_SCALE, 1)
     : 0
 
   const rows = [
     ...getDecorationChances(temperature),
+    { key: '代理', prob: getSubstituteChance(temperature, enableSubs) },
     { key: '分割', prob: splitProb },
   ]
 

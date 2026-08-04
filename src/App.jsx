@@ -15,6 +15,9 @@ export default function App() {
   const [bpm, setBpm] = useState(90)
   const [temperature, setTemperature] = useState(0.3)
   const [enableMultiChord, setEnableMultiChord] = useState(true)
+  const [enableSubs, setEnableSubs] = useState(true)
+  const [playStyle, setPlayStyle] = useState('block')
+  const [waveform, setWaveform] = useState('triangle')
   const [showSettings, setShowSettings] = useState(true)
 
   const { playing, currentChord, history, distribution, toggle } = useChordSequencer({
@@ -23,6 +26,9 @@ export default function App() {
     bpm,
     temperature,
     enableMultiChord,
+    enableSubs,
+    playStyle,
+    waveform,
   })
 
   return (
@@ -52,12 +58,22 @@ export default function App() {
           onTemperatureChange={setTemperature}
           enableMultiChord={enableMultiChord}
           onToggleMultiChord={setEnableMultiChord}
+          enableSubs={enableSubs}
+          onToggleSubs={setEnableSubs}
+          playStyle={playStyle}
+          onPlayStyleChange={setPlayStyle}
+          waveform={waveform}
+          onWaveformChange={setWaveform}
         />
       )}
 
       <div className="readout">
         <ProbabilityMeter distribution={distribution} />
-        <DecorationInfo temperature={temperature} enableMultiChord={enableMultiChord} />
+        <DecorationInfo
+          temperature={temperature}
+          enableMultiChord={enableMultiChord}
+          enableSubs={enableSubs}
+        />
       </div>
     </div>
   )

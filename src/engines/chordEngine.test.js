@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { SCALES, getDefs, buildChord, midiToNoteName } from './chordEngine.js'
+import { SCALES, getDefs, buildChord, midiToNoteName, getSubstituteChance } from './chordEngine.js'
 
 // temperature=0 だと 7th/テンションの付与確率が 0 になり、buildChord は決定的（トライアドのみ）になる
 const triad = (key, scale, degree) => buildChord(key, scale, degree, 0)
@@ -74,6 +74,42 @@ test('buildChord (triad, temp=0) has no added bass and stays in the voice-leadin
 test('degree wraps around the scale length', () => {
   const len = SCALES.major.intervals.length
   assert.equal(triad('C', 'major', len).name, triad('C', 'major', 0).name)
+})
+
+test('getSubstituteChance is 0 when disabled or at temperature 0, positive otherwise', () => {
+  assert.equal(getSubstituteChance(0.5, false), 0)
+  assert.equal(getSubstituteChance(0, true), 0)
+  assert.ok(getSubstituteChance(0.3, true) > 0)
+  assert.ok(getSubstituteChance(1, true) <= 0.6) // 上限クランプ
+})
+
+test('enableSubs does not alter chords at temperature 0 (stays diatonic/deterministic)', () => {
+  // temperature=0 では代理確率が 0 なので、有効でもダイアトニックのまま
+  assert.equal(buildChord('C', 'major', 1, 0, true).name, 'Dm')
+  assert.equal(buildChord('A', 'minor', 4, 0, true).name, 'Em')
+})
+
+test('enableSubs can turn a diatonic minor chord into a non-diatonic secondary dominant', () => {
+  // C major の ii(Dm) は代理で II7(D7 系, メジャー3度) になり得る
+  let sawSecondaryDominant = false
+  for (let i = 0; i < 300; i++) {
+    const c = buildChord('C', 'major', 1, 1, true)
+    // 代理成立時はルート D のメジャー系（'Dm' で始まらない 'D...'）になる
+    if (c.name.startsWith('D') && !c.name.startsWith('Dm')) {
+      sawSecondaryDominant = true
+      assert.ok(c.name.includes('7'), `secondary dominant should carry a 7th: ${c.name}`)
+    }
+  }
+  assert.ok(sawSecondaryDominant, 'ii should sometimes become a major-rooted secondary dominant')
+})
+
+test('enableSubs keeps midis finite, unique and ascending', () => {
+  for (let i = 0; i < 200; i++) {
+    const c = buildChord('C', 'major', i % 7, 0.8, true)
+    assert.deepEqual(c.midis, [...c.midis].sort((a, b) => a - b))
+    assert.equal(c.midis.length, new Set(c.midis).size)
+    for (const m of c.midis) assert.ok(Number.isFinite(m))
+  }
 })
 
 // 現状の挙動を丸ごと固定するゴールデンテスト（getDefs の可読化リファクタで壊さないための保険）
