@@ -1,5 +1,5 @@
 import { SCALES } from '../engines/chordEngine'
-import { KEYS, PLAY_STYLES, WAVEFORMS } from '../constants'
+import { KEYS, PLAY_STYLES, RHYTHM_SPEEDS, WAVEFORMS } from '../constants'
 
 // key / scale / bpm / temperature など、生成の重み付けを決めるパラメータ群
 export default function WeightPanel({
@@ -17,9 +17,14 @@ export default function WeightPanel({
   onToggleSubs,
   playStyle,
   onPlayStyleChange,
+  rhythmSpeed,
+  onRhythmSpeedChange,
   waveform,
   onWaveformChange,
 }) {
+  // 速さは刻み/アルペジオのときだけ効く
+  const showSpeed = playStyle === 'comp' || playStyle === 'arpeggio'
+
   return (
     <div className="weight-panel">
       <label className="field">
@@ -32,6 +37,19 @@ export default function WeightPanel({
           ))}
         </select>
       </label>
+
+      {showSpeed && (
+        <label className="field">
+          <span className="field__label">速さ</span>
+          <select value={rhythmSpeed} onChange={e => onRhythmSpeedChange(e.target.value)}>
+            {RHYTHM_SPEEDS.map(s => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="field">
         <span className="field__label">音色</span>

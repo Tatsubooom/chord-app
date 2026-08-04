@@ -8,6 +8,7 @@ import {
   MEASURE_SPLIT_SCALE,
   PATTERN_MIN_RUN,
   PATTERN_POPUP_COOLDOWN,
+  RHYTHM_SPEEDS,
 } from '../constants'
 
 // DAWのグリッド入力に合わせた、自然なリズムの分割ロジック。
@@ -71,7 +72,8 @@ export function useChordSequencer(settings) {
   }, [settings])
 
   function next() {
-    const { key, scale, bpm, temperature, enableMultiChord, playStyle, enableSubs, waveform } = settingsRef.current
+    const { key, scale, bpm, temperature, enableMultiChord, playStyle, enableSubs, waveform, rhythmSpeed } = settingsRef.current
+    const speedDiv = RHYTHM_SPEEDS.find(s => s.value === rhythmSpeed)?.div ?? 2
 
     const scaleLength = SCALES[scale].intervals.length
     const currentDegree = historyRef.current[0]?.degree ?? 0
@@ -135,7 +137,7 @@ export function useChordSequencer(settings) {
     }))
 
     const durSec = (60 / bpm) * beats
-    playChord(chord.midis, durSec, playStyle, bpm, waveform)
+    playChord(chord.midis, durSec, { style: playStyle, bpm, waveform, speedDiv })
     setCurrentChord(chord)
     setHistory([...historyRef.current])
     setDistribution(dist)

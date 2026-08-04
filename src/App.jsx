@@ -17,6 +17,7 @@ export default function App() {
   const [enableMultiChord, setEnableMultiChord] = useState(true)
   const [enableSubs, setEnableSubs] = useState(true)
   const [playStyle, setPlayStyle] = useState('block')
+  const [rhythmSpeed, setRhythmSpeed] = useState('normal')
   const [waveform, setWaveform] = useState('triangle')
   const [showSettings, setShowSettings] = useState(true)
 
@@ -28,6 +29,7 @@ export default function App() {
     enableMultiChord,
     enableSubs,
     playStyle,
+    rhythmSpeed,
     waveform,
   })
 
@@ -62,6 +64,8 @@ export default function App() {
           onToggleSubs={setEnableSubs}
           playStyle={playStyle}
           onPlayStyleChange={setPlayStyle}
+          rhythmSpeed={rhythmSpeed}
+          onRhythmSpeedChange={setRhythmSpeed}
           waveform={waveform}
           onWaveformChange={setWaveform}
         />

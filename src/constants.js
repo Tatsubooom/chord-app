@@ -7,6 +7,14 @@ export const PLAY_STYLES = [
   { value: 'arpeggio', label: 'アルペジオ（分散）' },
 ]
 
+// 刻み・アルペジオの速さ（1拍あたりの分割数 div。非線形）
+export const RHYTHM_SPEEDS = [
+  { value: 'slow', label: 'ゆっくり（4分）', div: 1 },
+  { value: 'normal', label: 'ふつう（8分）', div: 2 },
+  { value: 'fast', label: '速い（3連）', div: 3 },
+  { value: 'rapid', label: '倍速（16分）', div: 4 },
+]
+
 // 音色（オシレータの波形）
 export const WAVEFORMS = [
   { value: 'triangle', label: '三角波（やわらか）' },
