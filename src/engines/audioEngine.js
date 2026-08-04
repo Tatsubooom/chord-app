@@ -11,6 +11,12 @@ const freq = midi => 440 * Math.pow(2, (midi - 69) / 12)
 // 波形ごとの音量補正。倍音の多い矩形/ノコギリは耳につきやすく音割れしやすいので下げる。
 const WAVE_GAIN = { sine: 1.15, triangle: 1.0, square: 0.58, sawtooth: 0.62 }
 
+// 速さが遅い（＝1音が長い）ほど音が大きく聞こえる偏りを打ち消す音量係数。
+// 基準長 0.16 秒より長い音は最大 1/2 まで下げ、短い音はそのまま。
+function durGain(dur) {
+  return Math.max(0.5, Math.min(1, 0.16 / dur))
+}
+
 // 1音を鳴らす。shape で余韻の付き方を変える。
 //   'sustain' : アタック → ゆるやかな減衰 → リリース（ブロック/アルペジオ/積み上げ向け・余韻あり）
 //   'pluck'   : 立ち上がり後に減衰する打鍵的な音（刻み向け・粒立ち重視）
@@ -70,23 +76,26 @@ function playComp(context, midis, now, durationSec, beatSec, waveform, gainScale
     const pos = h % div
     const vel = pos === 0 ? 1.0 : pos === half && div > 1 ? 0.82 : 0.64
     const dur = Math.min(step * 0.55, now + durationSec - start)
-    midis.forEach(m => playNote(context, m, start, dur, base * vel, waveform, 'pluck'))
+    midis.forEach(m => playNote(context, m, start, dur, base * vel * durGain(dur), waveform, 'pluck'))
   }
 }
 
-// アルペジオ: 一定テンポ（beatSec/div）で往復させ、構成音数で速度が偏らないようにする。
-function playArpeggio(context, midis, now, durationSec, beatSec, waveform, gainScale, div) {
+// アルペジオ: 一定テンポ（beatSec/div）で往復。構成音数で速度が偏らないようにする。
+// phaseStart で前のコードからの位相を引き継ぎ、変わり目で毎回最低音へリセットされる
+// 「ぶつ切り」感をなくす。各音はコード終端で切らず余韻を次のコードへ渡して繋げる。
+function playArpeggio(context, midis, now, durationSec, beatSec, waveform, gainScale, div, phaseStart) {
   const step = beatSec / div
   const order = [...midis].sort((a, b) => a - b)
   const pat = pingPong(order.length)
   const steps = Math.max(1, Math.round(durationSec / step))
-  const peak = 0.34 * gainScale
+  const peak = 0.24 * gainScale
   for (let s = 0; s < steps; s++) {
     const start = now + s * step
     if (start >= now + durationSec - 0.01) break
-    const midi = order[pat[s % pat.length]]
-    const dur = Math.min(step * 1.8, now + durationSec - start)
-    playNote(context, midi, start, dur, peak, waveform)
+    const midi = order[pat[(phaseStart + s) % pat.length]]
+    // 終端でクランプせず一定の余韻を持たせる（次コードの音と重なってレガートに繋がる）
+    const dur = Math.min(step * 1.8, 0.5)
+    playNote(context, midi, start, dur, peak * durGain(dur), waveform)
   }
 }
 
@@ -113,11 +122,12 @@ function playBuildup(context, midis, now, durationSec, beatSec, waveform, gainSc
  * @param {number}   [opts.bpm]       テンポ
  * @param {OscillatorType} [opts.waveform] 音色（sine/triangle/square/sawtooth）
  * @param {number}   [opts.speedDiv]  刻み/アルペジオ/積み上げの1拍あたり分割数
+ * @param {number}   [opts.phaseStart] アルペジオの位相オフセット（コード跨ぎの連続性用）
  */
 export function playChord(
   midis,
   durationSec,
-  { style = 'block', bpm = 90, waveform = 'triangle', speedDiv = 2 } = {},
+  { style = 'block', bpm = 90, waveform = 'triangle', speedDiv = 2, phaseStart = 0 } = {},
 ) {
   if (!midis || !midis.length) return
   const context = getCtx()
@@ -126,7 +136,7 @@ export function playChord(
   const gainScale = WAVE_GAIN[waveform] ?? 1
   const div = Math.max(1, speedDiv)
   if (style === 'comp') return playComp(context, midis, now, durationSec, beatSec, waveform, gainScale, div)
-  if (style === 'arpeggio') return playArpeggio(context, midis, now, durationSec, beatSec, waveform, gainScale, div)
+  if (style === 'arpeggio') return playArpeggio(context, midis, now, durationSec, beatSec, waveform, gainScale, div, phaseStart)
   if (style === 'buildup') return playBuildup(context, midis, now, durationSec, beatSec, waveform, gainScale, div)
   return playBlock(context, midis, now, durationSec, waveform, gainScale)
 }

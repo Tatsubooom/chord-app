@@ -65,6 +65,7 @@ export function useChordSequencer(settings) {
   const idRef = useRef(0)
   const cooldownRef = useRef(0)
   const phraseRef = useRef(null)
+  const arpPhaseRef = useRef(0)
   const settingsRef = useRef(settings)
 
   useEffect(() => {
@@ -137,7 +138,15 @@ export function useChordSequencer(settings) {
     }))
 
     const durSec = (60 / bpm) * beats
-    playChord(chord.midis, durSec, { style: playStyle, bpm, waveform, speedDiv })
+
+    // アルペジオはコード跨ぎで位相を継続させ、変わり目のリセット（ぶつ切り）をなくす
+    let phaseStart = 0
+    if (playStyle === 'arpeggio') {
+      phaseStart = arpPhaseRef.current
+      const stepSec = 60 / bpm / speedDiv
+      arpPhaseRef.current += Math.max(1, Math.round(durSec / stepSec))
+    }
+    playChord(chord.midis, durSec, { style: playStyle, bpm, waveform, speedDiv, phaseStart })
     setCurrentChord(chord)
     setHistory([...historyRef.current])
     setDistribution(dist)
@@ -151,6 +160,7 @@ export function useChordSequencer(settings) {
       totalBeatsRef.current = 0
       cooldownRef.current = 0
       phraseRef.current = null
+      arpPhaseRef.current = 0
       setHistory([])
       setCurrentChord(null)
       setDistribution([])

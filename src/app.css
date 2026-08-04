@@ -234,17 +234,24 @@
   gap: 5px;
 }
 
-/* 生成パラメータ（項目が増えたので2列に。狭い画面では1列に折り返す） */
+/* 生成パラメータ（左=演奏まわり / 右=曲の基本設定の2列。狭い画面では縦積み） */
 .weight-panel {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 22px;
-  width: min(640px, 100%);
+  display: flex;
+  gap: 14px 28px;
+  width: min(680px, 100%);
   margin: 6px auto 0;
+  align-items: flex-start;
+}
+.weight-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 @media (max-width: 640px) {
   .weight-panel {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
 .field {
