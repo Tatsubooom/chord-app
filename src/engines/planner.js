@@ -21,6 +21,11 @@ const FUNCTION = {
   minor: ['T', 'SD', 'T', 'SD', 'D', 'SD', 'D'],
 }
 
+/** ダイアトニック度数の和声機能（T / SD / D）。ペンタトニック等では null */
+export function degreeFunction(scale, degree) {
+  return FUNCTION[scale]?.[degree] ?? null
+}
+
 const DOM7 = [0, 4, 7, 10]
 
 // ---- 確率（UI 表示にも使う） ------------------------------------------------

@@ -43,10 +43,9 @@ src/
   components/
     Piano.jsx                背景の鍵盤（鳴っている音をハイライト）
     ChordDisplay.jsx         現在のコード（構成音・機能・仕掛け・声部の動き）+ 通知ポップアップ
-    ChordHistory.jsx         流れていくコード履歴
+    ChordHistory.jsx         流れていくコード履歴（機能色の下線）＋ 次の小節の候補
     TransportControls.jsx    再生 / 位置カウンター（小節・拍・BPM）
     WeightPanel.jsx          設定パネル（▽ で開閉。曲 / 演奏 / 音 / 生成）
-    ProbabilityMeter.jsx     次の小節の骨格の抽選確率メーター
     DecorationInfo.jsx       仕掛け・色の起きやすさ
 docs/
   PLAN.md                    改善計画

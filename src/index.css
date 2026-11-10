@@ -13,6 +13,12 @@
   --accent-bg: rgba(192, 132, 252, 0.14);
   --accent-border: rgba(192, 132, 252, 0.5);
 
+  /* 和声機能の色（履歴の下線など） */
+  --fn-T: #5cc79c;
+  --fn-SD: #6aa2ff;
+  --fn-D: #ff8a5c;
+  --fn-SDm: #d68cf0;
+
   /* セグメントメーター（昔の VU メーター風） */
   --meter-bg: #0d0f14;
   --meter-off: #262b36;

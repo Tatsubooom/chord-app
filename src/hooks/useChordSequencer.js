@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { buildChord, realizeChord } from '../engines/chordEngine'
 import { getPatternMatches } from '../engines/weightEngine'
-import { planSection } from '../engines/planner'
+import { planSection, degreeFunction } from '../engines/planner'
 import { playChord, stopAll } from '../engines/audioEngine'
 import {
   BEATS_PER_MEASURE,
@@ -148,13 +148,14 @@ export function useChordSequencer(settings) {
     totalBeatsRef.current = totalBeats + e.beats
     historyRef.current = trimHistory([chord, ...historyRef.current])
 
-    // メーター: 次の小節の骨格が、どの確率分布から選ばれたか
+    // 次の小節の骨格が、どの確率分布から選ばれたか（履歴の右側に「これから」として淡く出す）
     const nextHead = queueRef.current.find(x => x.beatInBar === 0 && x.dist)
     const dist = nextHead
       ? nextHead.dist.map((p, d) => ({
           degree: d,
           name: buildChord(key, scale, d, 0).name, // 決定的なトライアド名をラベルに
           prob: p,
+          func: degreeFunction(scale, d),
           chosen: d === nextHead.chosen,
           target: d === nextHead.target,
         }))

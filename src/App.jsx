@@ -4,7 +4,6 @@ import { useChordSequencer } from './hooks/useChordSequencer'
 import ChordDisplay from './components/ChordDisplay'
 import ChordHistory from './components/ChordHistory'
 import Piano from './components/Piano'
-import ProbabilityMeter from './components/ProbabilityMeter'
 import TransportControls from './components/TransportControls'
 import WeightPanel from './components/WeightPanel'
 import DecorationInfo from './components/DecorationInfo'
@@ -40,7 +39,7 @@ export default function App() {
       <div className="stage">
         <Piano activeMidis={currentChord?.midis || []} bassMidi={currentChord?.voicing?.bass ?? null} />
         <ChordDisplay chord={currentChord} />
-        <ChordHistory history={history} />
+        <ChordHistory history={history} distribution={distribution} />
       </div>
 
       <TransportControls playing={playing} onToggle={toggle} beatPos={beatPos} bpm={bpm} />
@@ -71,7 +70,6 @@ export default function App() {
       />
 
       <div className="readout">
-        <ProbabilityMeter distribution={distribution} />
         <DecorationInfo
           scale={scale}
           temperature={temperature}

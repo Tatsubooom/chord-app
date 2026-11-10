@@ -19,7 +19,7 @@ export default function ChordDisplay({ chord }) {
       <p className="chord-display__roman">
         {chord?.roman}
         {chord?.func && (
-          <span className="chord-display__fn" title={FUNCTION_LABELS[chord.func]}>
+          <span className={`chord-display__fn fn-${chord.func}`} title={FUNCTION_LABELS[chord.func]}>
             {chord.func}
           </span>
         )}
