@@ -1,41 +1,35 @@
-/* デザイントークン
-   方針: 紙と墨＋朱1色。カード・角丸・影は使わず、罫線（譜面の小節線のような）で構造を作る。 */
+/* デザイントークン: 黒と紫（初期デザインの配色を踏襲）。
+   角丸カードは使わず、区切りは細い罫線で。紫は「今」と「強調」にだけ使う。 */
 :root {
-  --paper: #f6f4ef;
-  --ink: #161512;
-  --ink-2: #3b3934;
-  --ink-3: #66625a; /* 補助テキスト（paper 上で 5:1 以上） */
-  --rule: #d8d4ca;
-  --rule-strong: #161512;
-  --accent: #c93a22; /* 朱 */
-  --accent-wash: rgba(201, 58, 34, 0.1);
-  --on-ink: #f6f4ef;
+  --bg: #16171d;
+  --bg-deep: #0d0f14;
+  --text: #a7adb8; /* 補助テキスト（bg 上で 7:1 程度） */
+  --text-h: #f3f4f6;
+  --text-dim: #868c99; /* 最も控えめな文字（bg 上で 5:1 程度） */
+  --border: #2e303a;
+  --border-strong: #4a4d5a;
+  --accent: #c084fc;
+  --accent-strong: #aa3bff;
+  --accent-bg: rgba(192, 132, 252, 0.14);
+  --accent-border: rgba(192, 132, 252, 0.5);
 
-  --sans: 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
-  --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  /* セグメントメーター（昔の VU メーター風） */
+  --meter-bg: #0d0f14;
+  --meter-off: #262b36;
+  --meter-on: #f4f5f7;
 
-  font: 15px/1.5 var(--sans);
-  color-scheme: light dark;
-  color: var(--ink-2);
-  background: var(--paper);
+  --sans: system-ui, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  font: 16px/1.5 var(--sans);
+  letter-spacing: 0.01em;
+  color-scheme: dark;
+  color: var(--text);
+  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #131311;
-    --ink: #edebe5;
-    --ink-2: #c9c6bd;
-    --ink-3: #8f8b81;
-    --rule: #2e2d29;
-    --rule-strong: #edebe5;
-    --accent: #ff6b4f;
-    --accent-wash: rgba(255, 107, 79, 0.14);
-    --on-ink: #131311;
-  }
 }
 
 *,
@@ -46,14 +40,20 @@
 
 body {
   margin: 0;
-  background: var(--paper);
+  background: var(--bg);
 }
 
 #root {
   min-height: 100svh;
+  text-align: center;
 }
 
 h1,
 p {
   margin: 0;
+}
+
+h1 {
+  font-weight: 500;
+  color: var(--text-h);
 }

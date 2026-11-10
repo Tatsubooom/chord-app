@@ -26,6 +26,8 @@ const pct = v => `${Math.round(v * 100)}%`
 
 // 設定パネル: 曲 / 演奏 / 音 / 生成 の4グループを、罫線の表として2段組に並べる（行数の多い「生成」を右段に）
 export default function WeightPanel({
+  open,
+  onToggleOpen,
   keyName,
   onKeyChange,
   scale,
@@ -53,6 +55,17 @@ export default function WeightPanel({
 
   return (
     <section className="settings" aria-label="設定">
+      <button className="settings__toggle" onClick={onToggleOpen} aria-expanded={open} aria-controls="settings-body">
+        <span className="settings__title">設定</span>
+        <span className="settings__summary">
+          {keyName} {SCALES[scale]?.label} · {bpm} BPM · ランダム度 {pct(temperature)} · スパイス {pct(spice)}
+        </span>
+        <span className="settings__chevron" aria-hidden="true">
+          {open ? '▽' : '▷'}
+        </span>
+      </button>
+      {open && (
+        <div className="settings__body" id="settings-body">
       <Group title="曲">
         <Field label="キー">
           <select value={keyName} onChange={e => onKeyChange(e.target.value)}>
@@ -135,7 +148,8 @@ export default function WeightPanel({
           <input type="checkbox" className="switch" checked={enableMultiChord} onChange={e => onToggleMultiChord(e.target.checked)} />
         </Field>
       </Group>
-
+        </div>
+      )}
     </section>
   )
 }

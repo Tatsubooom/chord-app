@@ -14,12 +14,12 @@ export default function DecorationInfo({ scale, temperature, spice, enableMultiC
 
   return (
     <section className="odds" aria-label="仕掛けの起きやすさ">
-      <header className="label-row">
-        <span className="label">仕掛けの起きやすさ</span>
-        <span className="label label--dim">
+      <div className="readout__caption">
+        <span>仕掛けの起きやすさ</span>
+        <span className="readout__dim">
           ランダム度 {Math.round(temperature * 100)} · スパイス {Math.round(spice * 100)} · 単位あたりの目安 %
         </span>
-      </header>
+      </div>
       <ul className="odds__list">
         {rows.map(r => {
           const lit = Math.round(Math.min(1, r.prob) * SEGMENTS)

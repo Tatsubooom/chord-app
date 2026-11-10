@@ -1,26 +1,24 @@
 import { Fragment } from 'react'
 import { BLOCK_MEASURES } from '../constants'
 
-// 流れていくコード履歴（1行のティッカー）。右端が最新、古いものは左へ流れて消える。
+// コード履歴（右から左へ流れる）。右端が最新で、古いものほど薄くなる。
 export default function ChordHistory({ history }) {
-  const items = [...history].reverse()
   return (
-    <section className="ticker" aria-label="コード履歴">
-      <span className="label">履歴</span>
-      <div className="ticker__track">
-        {items.map((c, idx) => {
-          const isBlockStart = c.isMeasureStart && c.measureId % BLOCK_MEASURES === 0
-          return (
-            <Fragment key={c.id}>
-              {isBlockStart && idx !== 0 && <span className="ticker__bar" aria-hidden="true" />}
-              <span className={'ticker__item' + (idx === items.length - 1 ? ' is-now' : '')}>
-                {c.name}
-                <span className="ticker__beats">{c.beats}</span>
-              </span>
-            </Fragment>
-          )
-        })}
-      </div>
-    </section>
+    <div className="chord-history">
+      {history.map((c, i) => {
+        // 4小節ごと（measureId が BLOCK_MEASURES の倍数）の小節頭に区切り線を置く
+        const isBlockStart = c.isMeasureStart && c.measureId % BLOCK_MEASURES === 0
+        return (
+          <Fragment key={c.id}>
+            <div className={'chord-history__item' + (i === 0 ? ' is-now' : '')} style={{ opacity: Math.max(0.25, 1 - i * 0.06) }}>
+              <div className="chord-history__name">{c.name}</div>
+              <div className="chord-history__roman">{c.roman}</div>
+              <div className="chord-history__beats">{'・'.repeat(c.beats)}</div>
+            </div>
+            {isBlockStart && i !== history.length - 1 && <div className="chord-history__divider" aria-hidden="true" />}
+          </Fragment>
+        )
+      })}
+    </div>
   )
 }

@@ -47,8 +47,6 @@ export const HISTORY_BEATS = 32
 // 区切り線を入れる小節ブロックの大きさ（4小節ごと）
 export const BLOCK_MEASURES = 4
 
-// 先読みで表示する「これから鳴るコード」の数
-export const UPCOMING_COUNT = 8
 
 // 有名進行ポップアップの発火条件
 // - 直近この数以上のコードが連続一致したら「進行をなぞっている」とみなす

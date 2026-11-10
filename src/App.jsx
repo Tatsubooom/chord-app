@@ -8,9 +8,6 @@ import ProbabilityMeter from './components/ProbabilityMeter'
 import TransportControls from './components/TransportControls'
 import WeightPanel from './components/WeightPanel'
 import DecorationInfo from './components/DecorationInfo'
-import SectionMap from './components/SectionMap'
-import { SCALES } from './engines/chordEngine'
-import { KEY_LABELS } from './constants'
 
 export default function App() {
   const [key, setKey] = useState('C')
@@ -25,7 +22,7 @@ export default function App() {
   const [waveform, setWaveform] = useState('triangle')
   const [showSettings, setShowSettings] = useState(true)
 
-  const { playing, currentChord, history, distribution, upcoming, beatPos, sectionView, toggle } = useChordSequencer({
+  const { playing, currentChord, history, distribution, beatPos, toggle } = useChordSequencer({
     key,
     scale,
     bpm,
@@ -40,58 +37,41 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="masthead">
-        <span className="masthead__brand">Chord Stream</span>
-        <span className="masthead__summary">
-          {KEY_LABELS[key] ?? key} · {SCALES[scale].label} · {bpm} BPM
-        </span>
-      </header>
-
-      <main>
-        <div className="stage">
-          <ChordDisplay chord={currentChord} />
-          <ProbabilityMeter distribution={distribution} />
-        </div>
-
+      <div className="stage">
         <Piano activeMidis={currentChord?.midis || []} bassMidi={currentChord?.voicing?.bass ?? null} />
-
-        <TransportControls
-          playing={playing}
-          onToggle={toggle}
-          showSettings={showSettings}
-          onToggleSettings={() => setShowSettings(s => !s)}
-          beatPos={beatPos}
-          bpm={bpm}
-        />
-
-        <SectionMap section={sectionView} upcoming={upcoming} />
+        <ChordDisplay chord={currentChord} />
         <ChordHistory history={history} />
+      </div>
 
-        {showSettings && (
-          <WeightPanel
-            keyName={key}
-            onKeyChange={setKey}
-            scale={scale}
-            onScaleChange={setScale}
-            bpm={bpm}
-            onBpmChange={setBpm}
-            temperature={temperature}
-            onTemperatureChange={setTemperature}
-            spice={spice}
-            onSpiceChange={setSpice}
-            enableMultiChord={enableMultiChord}
-            onToggleMultiChord={setEnableMultiChord}
-            enableSubs={enableSubs}
-            onToggleSubs={setEnableSubs}
-            playStyle={playStyle}
-            onPlayStyleChange={setPlayStyle}
-            rhythmSpeed={rhythmSpeed}
-            onRhythmSpeedChange={setRhythmSpeed}
-            waveform={waveform}
-            onWaveformChange={setWaveform}
-          />
-        )}
+      <TransportControls playing={playing} onToggle={toggle} beatPos={beatPos} bpm={bpm} />
 
+      <WeightPanel
+        open={showSettings}
+        onToggleOpen={() => setShowSettings(s => !s)}
+        keyName={key}
+        onKeyChange={setKey}
+        scale={scale}
+        onScaleChange={setScale}
+        bpm={bpm}
+        onBpmChange={setBpm}
+        temperature={temperature}
+        onTemperatureChange={setTemperature}
+        spice={spice}
+        onSpiceChange={setSpice}
+        enableMultiChord={enableMultiChord}
+        onToggleMultiChord={setEnableMultiChord}
+        enableSubs={enableSubs}
+        onToggleSubs={setEnableSubs}
+        playStyle={playStyle}
+        onPlayStyleChange={setPlayStyle}
+        rhythmSpeed={rhythmSpeed}
+        onRhythmSpeedChange={setRhythmSpeed}
+        waveform={waveform}
+        onWaveformChange={setWaveform}
+      />
+
+      <div className="readout">
+        <ProbabilityMeter distribution={distribution} />
         <DecorationInfo
           scale={scale}
           temperature={temperature}
@@ -99,7 +79,7 @@ export default function App() {
           enableMultiChord={enableMultiChord}
           enableSubs={enableSubs}
         />
-      </main>
+      </div>
     </div>
   )
 }

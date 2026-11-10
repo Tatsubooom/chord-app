@@ -2,16 +2,13 @@ import { useState, useRef, useEffect } from 'react'
 import { buildChord, realizeChord } from '../engines/chordEngine'
 import { getPatternMatches } from '../engines/weightEngine'
 import { planSection } from '../engines/planner'
-import { describeChord } from '../engines/theory'
 import { playChord, stopAll } from '../engines/audioEngine'
 import {
   BEATS_PER_MEASURE,
   HISTORY_BEATS,
-  KEYS,
   PATTERN_MIN_RUN,
   PATTERN_POPUP_COOLDOWN,
   RHYTHM_SPEEDS,
-  UPCOMING_COUNT,
 } from '../constants'
 
 // 先読みキューに最低限確保しておく拍数（これを下回ったら次のセクションを計画する）
@@ -43,9 +40,7 @@ export function useChordSequencer(settings) {
   const [currentChord, setCurrentChord] = useState(null)
   const [history, setHistory] = useState([])
   const [distribution, setDistribution] = useState([])
-  const [upcoming, setUpcoming] = useState([])
   const [beatPos, setBeatPos] = useState(null)
-  const [sectionView, setSectionView] = useState(null)
 
   const timerRef = useRef(null)
   const beatTimersRef = useRef([])
@@ -98,7 +93,6 @@ export function useChordSequencer(settings) {
     const speedDiv = RHYTHM_SPEEDS.find(x => x.value === rhythmSpeed)?.div ?? 2
     const scaleLength = scale === 'majorPenta' || scale === 'minorPenta' ? 5 : 7
     const mode = modeOf(scale)
-    const keyPc = KEYS.indexOf(key)
 
     ensureQueue(s)
     const e = queueRef.current.shift()
@@ -166,37 +160,6 @@ export function useChordSequencer(settings) {
         }))
       : []
 
-    const view = (x, k, state) => {
-      const { name, roman } = describeChord(x.spec, keyPc, mode)
-      return {
-        key: `${chord.id}-${state}-${k}`,
-        name,
-        roman,
-        beats: x.beats,
-        bar: x.bar,
-        beatInBar: x.beatInBar,
-        tag: x.gestureStart === false ? null : x.tag ?? null,
-        func: x.spec.func ?? null,
-        sectionIndex: x.sectionIndex,
-        state,
-      }
-    }
-    const up = queueRef.current.slice(0, UPCOMING_COUNT).map((x, k) => view(x, k, 'next'))
-
-    // 今のセクション（8小節）の全体像: 鳴らし終えたもの / 今 / これから
-    const cur = e.sectionIndex
-    const past = historyRef.current
-      .slice(1)
-      .filter(c => c.sectionIndex === cur)
-      .reverse()
-      .map((c, k) => view({ ...c, spec: c, gestureStart: c.tag ? true : false, tag: c.tag }, k, 'past'))
-    const future = queueRef.current.filter(x => x.sectionIndex === cur).map((x, k) => view(x, k, 'next'))
-    const section = {
-      index: cur,
-      info: e.section,
-      items: [...past, view({ ...e }, 0, 'now'), ...future],
-    }
-
     const durSec = (60 / bpm) * e.beats
 
     // アルペジオはコード跨ぎで位相を継続させ、変わり目のリセット（ぶつ切り）をなくす
@@ -212,16 +175,14 @@ export function useChordSequencer(settings) {
     beatTimersRef.current.forEach(clearTimeout)
     beatTimersRef.current = Array.from({ length: e.beats }, (_, k) =>
       setTimeout(
-        () => setBeatPos({ sectionIndex: cur, bar: e.bar, beat: e.beatInBar + k, total: totalBeats + k }),
+        () => setBeatPos({ sectionIndex: e.sectionIndex, bar: e.bar, beat: e.beatInBar + k, total: totalBeats + k }),
         (k * 60 * 1000) / bpm,
       ),
     )
 
-    setSectionView(section)
     setCurrentChord(chord)
     setHistory([...historyRef.current])
     setDistribution(dist)
-    setUpcoming(up)
     timerRef.current = setTimeout(next, durSec * 1000)
   }
 
@@ -242,9 +203,7 @@ export function useChordSequencer(settings) {
       setHistory([])
       setCurrentChord(null)
       setDistribution([])
-      setUpcoming([])
       setBeatPos(null)
-      setSectionView(null)
       setPlaying(false)
     } else {
       setPlaying(true)
@@ -260,5 +219,5 @@ export function useChordSequencer(settings) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing])
 
-  return { playing, currentChord, history, distribution, upcoming, beatPos, sectionView, toggle }
+  return { playing, currentChord, history, distribution, beatPos, toggle }
 }
