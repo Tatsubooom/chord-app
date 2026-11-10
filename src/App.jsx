@@ -14,6 +14,7 @@ export default function App() {
   const [scale, setScale] = useState('major')
   const [bpm, setBpm] = useState(90)
   const [temperature, setTemperature] = useState(0.3)
+  const [spice, setSpice] = useState(0.5)
   const [enableMultiChord, setEnableMultiChord] = useState(true)
   const [enableSubs, setEnableSubs] = useState(true)
   const [playStyle, setPlayStyle] = useState('block')
@@ -26,6 +27,7 @@ export default function App() {
     scale,
     bpm,
     temperature,
+    spice,
     enableMultiChord,
     enableSubs,
     playStyle,
@@ -58,6 +60,8 @@ export default function App() {
           onBpmChange={setBpm}
           temperature={temperature}
           onTemperatureChange={setTemperature}
+          spice={spice}
+          onSpiceChange={setSpice}
           enableMultiChord={enableMultiChord}
           onToggleMultiChord={setEnableMultiChord}
           enableSubs={enableSubs}
@@ -74,7 +78,9 @@ export default function App() {
       <div className="readout">
         <ProbabilityMeter distribution={distribution} />
         <DecorationInfo
+          scale={scale}
           temperature={temperature}
+          spice={spice}
           enableMultiChord={enableMultiChord}
           enableSubs={enableSubs}
         />

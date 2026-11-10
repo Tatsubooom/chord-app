@@ -23,6 +23,8 @@ npm run dev
 
 その他: `npm run build` / `npm run preview` / `npm run lint` / `npm test`
 
+生成される進行をテキストで確認: `npm run sample -- --key C --scale major --temp 0.3 --spice 0.5`
+
 ## 構成
 
 ```
@@ -32,7 +34,10 @@ src/
   hooks/
     useChordSequencer.js     再生ループ・履歴管理（スケジューラ）
   engines/
-    chordEngine.js           スケール定義 / 度数→コード変換
+    planner.js               8小節先読みの進行プランナー（骨格・色・仕掛け・終止）
+    chordEngine.js           スケール定義 / 度数→コード spec / spec→具体的なコード
+    theory.js                構成音程からコード名・ローマ数字を生成
+    voicing.js               ベース＋上声のボイスリーディング
     weightEngine.js          マルコフ遷移表 + 進行パターンボーナス + 音楽理論補正
     audioEngine.js           Web Audio によるコード再生
   components/
@@ -47,5 +52,7 @@ docs/
   PLAN.md                    改善計画
 ```
 
-生成の流れ: `useChordSequencer` が `weightEngine` で次の度数の重みを計算 → 抽選 →
-`chordEngine` でコード化 → `audioEngine` で発音、を BPM に合わせて `setTimeout` で繰り返します。
+生成の流れ: `useChordSequencer` が `planner` で8小節ぶんを先読み計画
+（骨格は `weightEngine` の重みから抽選 → 色付け → クリシェ等の仕掛けを差し込み）→
+再生時に `chordEngine` / `voicing` で前のコードに繋がる音高を決定 → `audioEngine` で発音、を BPM に合わせて繰り返します。
+scripts/ には生成結果をテキストで書き出す `sample.js` があります。

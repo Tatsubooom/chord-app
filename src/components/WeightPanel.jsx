@@ -11,6 +11,8 @@ export default function WeightPanel({
   onBpmChange,
   temperature,
   onTemperatureChange,
+  spice,
+  onSpiceChange,
   enableMultiChord,
   onToggleMultiChord,
   enableSubs,
@@ -132,6 +134,21 @@ export default function WeightPanel({
             onChange={e => onTemperatureChange(Number(e.target.value))}
           />
           <span className="field__value">{Math.round(temperature * 100)}%</span>
+        </label>
+
+        <label className="field">
+          <span className="field__label" title="クリシェ・イキスギ・セカンダリー等の仕掛けの量">
+            スパイス
+          </span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={spice}
+            onChange={e => onSpiceChange(Number(e.target.value))}
+          />
+          <span className="field__value">{Math.round(spice * 100)}%</span>
         </label>
       </div>
     </div>
