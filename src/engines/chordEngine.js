@@ -1,3 +1,6 @@
+import { describeChord, mod12 } from './theory.js';
+import { voiceChord } from './voicing.js';
+
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 export const SCALES = {
@@ -101,14 +104,22 @@ function buildDefs(intervals) {
   });
 }
 
+/**
+ * 度数から（装飾込みの）コード spec を作り、表示名とボイシングを付けて返す。
+ * spec は キー相対のルート rel ＋ 構成音程 ivs ＋ ベース bassRel（任意）で表す（theory.js 参照）。
+ * 戻り値の midis は直前のボイシングを考慮しない単発の配置。連続再生時は realizeChord で前のコードに繋げる。
+ */
 export function buildChord(key, scaleName, degree, temperature = 0.5, enableSubs = false) {
+  const spec = buildChordSpec(scaleName, degree, temperature, enableSubs);
+  return realizeChord(spec, key, scaleName, null);
+}
+
+export function buildChordSpec(scaleName, degree, temperature = 0.5, enableSubs = false) {
   const scaleData = SCALES[scaleName] || SCALES.major;
   const intervals = scaleData.intervals;
   const defs = buildDefs(intervals);
-  const def = defs[degree % intervals.length];
-  
-  const rootIdx = NOTES.indexOf(key);
-  const rootNoteName = NOTES[(rootIdx + def.root) % 12];
+  const deg = degree % intervals.length;
+  const def = defs[deg];
   const isDiatonic = intervals.length === 7;
   const isDim = def.relFifth === 6;
 
@@ -116,110 +127,73 @@ export function buildChord(key, scaleName, degree, temperature = 0.5, enableSubs
   const subMode = scaleName === 'major' ? 'major' : scaleName === 'minor' ? 'minor' : null;
   let workThird = def.relThird;
   let forcedDom7 = false;
+  let tag = null;
   if (subMode && !isDim && Math.random() < getSubstituteChance(temperature, enableSubs)) {
-    const opts = SUBSTITUTIONS[subMode][degree % 7];
+    const opts = SUBSTITUTIONS[subMode][deg % 7];
     if (opts) {
       const s = opts[Math.floor(Math.random() * opts.length)];
       workThird = s.third;
       forcedDom7 = s.dom7;
+      tag = s.dom7 ? 'セカンダリー' : '借用';
     }
   }
 
-  let offsets = [0, workThird, def.relFifth];
-  let nameSuffix = (workThird === 3) ? 'm' : '';
-  if (isDim) nameSuffix = '°';
-
+  const ivs = [0, workThird, def.relFifth];
   const tensionProb = Math.pow(temperature, 2);
 
-  // --- sus4: 3rd を完全4度に置換（dim以外）。長短の性質を失う ---
-  let susLabel = '';
+  // --- sus4: 3rd を完全4度に置換（dim以外）---
+  let sus = false;
   if (!isDim && !forcedDom7 && Math.random() < tensionProb * DECORATION_COEF.sus4) {
-    offsets[1] = 5;
-    nameSuffix = '';
-    susLabel = 'sus4';
+    ivs[1] = 5;
+    sus = true;
   }
 
   // --- 7th / 6th ---
-  let seventhLabel = '';
-  let has7 = false;
+  let seventh = null;
   if (forcedDom7) {
-    // セカンダリードミナントは ♭7 を必ず持つ
-    offsets.push(10); seventhLabel = '7'; has7 = true;
-  } else {
-    const t7 = Math.min(tensionProb * DECORATION_COEF.seventh, 1.0);
-    if (Math.random() < t7) {
-      const s7 = def.relSeventh;
-      if (s7 === 11) { offsets.push(11); seventhLabel = 'maj7'; has7 = true; }
-      else if (s7 === 10) { offsets.push(10); seventhLabel = '7'; has7 = true; }
-      else if (s7 === 9) { offsets.push(9); seventhLabel = '6'; } // 6thは厳密には7thではない
-    }
+    seventh = 10;
+  } else if (Math.random() < Math.min(tensionProb * DECORATION_COEF.seventh, 1.0)) {
+    if ([9, 10, 11].includes(def.relSeventh)) seventh = def.relSeventh;
   }
-  const has6 = offsets.includes(9);
+  if (seventh != null) ivs.push(seventh);
 
   // --- 上部テンション (9 / 11 / 13) ---
-  const tensionParts = [];
-  // 9th
-  if (Math.random() < tensionProb * DECORATION_COEF.ninth) {
-    const n9 = def.relNinth % 12;
-    if (!offsets.includes(n9) && n9 !== 0) { offsets.push(n9); tensionParts.push('9'); }
+  if (def.relNinth % 12 === 2 && Math.random() < tensionProb * DECORATION_COEF.ninth) ivs.push(14);
+  const has7 = seventh === 10 || seventh === 11;
+  if (isDiatonic && has7 && !sus && Math.random() < tensionProb * DECORATION_COEF.eleventh) {
+    ivs.push(workThird === 4 ? 18 : 17); // メジャー3度とぶつかる 11 は #11 に
   }
-  // 11th: メジャー3度とはぶつかるので major は #11、minor は natural 11。7音スケール・7th付き・sus無しのみ
-  if (isDiatonic && has7 && !susLabel && Math.random() < tensionProb * DECORATION_COEF.eleventh) {
-    const eleven = workThird === 4 ? 6 : 5;
-    if (!offsets.includes(eleven)) { offsets.push(eleven); tensionParts.push(def.relThird === 4 ? '#11' : '11'); }
+  if (isDiatonic && seventh === 10 && workThird === 4 && !sus && Math.random() < tensionProb * DECORATION_COEF.thirteenth) {
+    ivs.push(21);
   }
-  // 13th: ドミナント7th上のみ。6thと衝突する音なので6th無し時のみ
-  if (isDiatonic && seventhLabel === '7' && !susLabel && !has6 && Math.random() < tensionProb * DECORATION_COEF.thirteenth) {
-    offsets.push(9); tensionParts.push('13');
-  }
-
-  let extLabel = '';
-  if (tensionParts.length) {
-    // 7th等が無く 9th 単独なら add9 表記、それ以外は括弧でまとめる
-    if (!has7 && seventhLabel === '' && tensionParts.length === 1 && tensionParts[0] === '9') extLabel = 'add9';
-    else extLabel = '(' + tensionParts.join(',') + ')';
-  }
-
-  const tensionSuffix = seventhLabel + susLabel + extLabel;
-
-  // Voice Leading（滑らかな繋がり）を実現するためのアルゴリズム
-  // 構成音をすべて C4(60) に近い音域（G3(55)〜F#4(66)）に折り畳んで転回形を作る
-  const chordTones = offsets.map(o => {
-    const noteClass = (rootIdx + def.root + o) % 12;
-    let midi = 60 + noteClass; // 一旦C4〜B4に配置
-    if (midi > 66) midi -= 12; // G4以上なら1オクターブ下げてG3〜F#4に収める
-    return midi;
-  });
-  const finalChordTones = Array.from(new Set(chordTones)).sort((a, b) => a - b);
 
   // --- 分数コード: 一定確率でベースを3rd/5thに置いた転回形にする ---
-  let slashLabel = '';
-  const bassMidis = [];
-  if (!susLabel && Math.random() < tensionProb * DECORATION_COEF.slash) {
-    const candidates = [offsets[1], offsets[2]].filter(o => o && o % 12 !== 0);
-    if (candidates.length) {
-      const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-      const bassClass = (rootIdx + def.root + chosen) % 12;
-      let bassMidi = 48 + bassClass; // 和音域(55〜)より下に配置
-      while (bassMidi >= 55) bassMidi -= 12;
-      bassMidis.push(bassMidi);
-      slashLabel = '/' + NOTES[bassClass];
-    }
+  let bassRel = null;
+  if (!sus && Math.random() < tensionProb * DECORATION_COEF.slash) {
+    const chosen = [ivs[1], ivs[2]][Math.floor(Math.random() * 2)];
+    bassRel = def.root + chosen;
   }
 
-  const midis = [...bassMidis, ...finalChordTones].sort((a, b) => a - b);
+  return { rel: def.root, ivs, bassRel, degree: deg, tag };
+}
 
-  const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-  const baseRoman = romanNumerals[degree % 7] || (degree + 1).toString();
-  const isMinor = nameSuffix === 'm' || nameSuffix === '°';
-  const roman = (isMinor ? baseRoman.toLowerCase() : baseRoman) + nameSuffix + tensionSuffix;
-
+/**
+ * spec を具体的なコード（名前 / ローマ数字 / 音高）にする。
+ * prevVoicing を渡すと、そこから最小の動きで繋がるボイシングを選ぶ。
+ */
+export function realizeChord(spec, key, scaleName, prevVoicing = null) {
+  const keyPc = NOTES.indexOf(key);
+  const mode = scaleName === 'minor' || scaleName === 'minorPenta' ? 'minor' : 'major';
+  const { name, roman, rootPc } = describeChord(spec, keyPc, mode);
+  const bassPc = spec.bassRel != null ? mod12(keyPc + spec.bassRel) : null;
+  const voicing = voiceChord(rootPc, spec.ivs, bassPc, prevVoicing, spec.kind);
   return {
-    name: rootNoteName + nameSuffix + tensionSuffix + slashLabel,
-    roman: roman,
-    degree: degree % intervals.length,
-    midis: midis,
-    noteNames: midis.map(m => midiToNoteName(m)),
+    ...spec,
+    name,
+    roman,
+    voicing,
+    midis: voicing.midis,
+    noteNames: voicing.midis.map(m => midiToNoteName(m)),
   };
 }
 

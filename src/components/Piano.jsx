@@ -1,6 +1,6 @@
 // 背景に薄く敷くピアノ鍵盤。現在鳴っている音（midis）の鍵をハイライトする。
 const LO = 36 // C2
-const HI = 72 // C5
+const HI = 84 // C6
 const BLACK_PC = new Set([1, 3, 6, 8, 10])
 
 const WHITE_W = 12

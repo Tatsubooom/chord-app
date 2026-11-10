@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { SCALES, buildChord } from '../engines/chordEngine'
+import { SCALES, buildChord, buildChordSpec, realizeChord } from '../engines/chordEngine'
 import { weightedRandom, calcWeights, getPatternMatches, pickPhraseTemplate } from '../engines/weightEngine'
 import { playChord } from '../engines/audioEngine'
 import {
@@ -66,6 +66,7 @@ export function useChordSequencer(settings) {
   const cooldownRef = useRef(0)
   const phraseRef = useRef(null)
   const arpPhaseRef = useRef(0)
+  const voicingRef = useRef(null)
   const settingsRef = useRef(settings)
 
   useEffect(() => {
@@ -118,7 +119,10 @@ export function useChordSequencer(settings) {
 
     const beats = pickBeats(totalBeats, temperature, enableMultiChord)
 
-    const chord = buildChord(key, scale, degree, temperature, enableSubs)
+    // 直前のボイシングから最小の動きで繋がるように音高を決める
+    const spec = buildChordSpec(scale, degree, temperature, enableSubs)
+    const chord = realizeChord(spec, key, scale, voicingRef.current)
+    voicingRef.current = chord.voicing
     chord.id = idRef.current++
     chord.pattern = pattern
     chord.beats = beats
@@ -161,6 +165,7 @@ export function useChordSequencer(settings) {
       cooldownRef.current = 0
       phraseRef.current = null
       arpPhaseRef.current = 0
+      voicingRef.current = null
       setHistory([])
       setCurrentChord(null)
       setDistribution([])
