@@ -1,5 +1,6 @@
 // 生成されるコード進行をテキストで書き出す（耳で聴く前に「文字で」確かめる用）。
 //   npm run sample -- --key C --scale major --temp 0.3 --spice 0.5 --sections 4 [--no-subs] [--no-multi]
+import process from 'node:process'
 import { planSection } from '../src/engines/planner.js'
 import { describeChord } from '../src/engines/theory.js'
 
