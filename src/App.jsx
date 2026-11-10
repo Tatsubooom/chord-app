@@ -8,6 +8,9 @@ import ProbabilityMeter from './components/ProbabilityMeter'
 import TransportControls from './components/TransportControls'
 import WeightPanel from './components/WeightPanel'
 import DecorationInfo from './components/DecorationInfo'
+import SectionMap from './components/SectionMap'
+import { SCALES } from './engines/chordEngine'
+import { KEY_LABELS } from './constants'
 
 export default function App() {
   const [key, setKey] = useState('C')
@@ -22,7 +25,7 @@ export default function App() {
   const [waveform, setWaveform] = useState('triangle')
   const [showSettings, setShowSettings] = useState(true)
 
-  const { playing, currentChord, history, distribution, toggle } = useChordSequencer({
+  const { playing, currentChord, history, distribution, upcoming, beatPos, sectionView, toggle } = useChordSequencer({
     key,
     scale,
     bpm,
@@ -37,8 +40,15 @@ export default function App() {
 
   return (
     <div className="app">
+      <header className="app__header">
+        <span className="app__brand">CHORD STREAM</span>
+        <span className="app__summary">
+          {KEY_LABELS[key] ?? key} · {SCALES[scale].label} · {bpm} BPM
+        </span>
+      </header>
+
       <div className="stage">
-        <Piano activeMidis={currentChord?.midis || []} />
+        <Piano activeMidis={currentChord?.midis || []} bassMidi={currentChord?.voicing?.bass ?? null} />
         <ChordDisplay chord={currentChord} />
         <ChordHistory history={history} />
       </div>
@@ -48,7 +58,11 @@ export default function App() {
         onToggle={toggle}
         showSettings={showSettings}
         onToggleSettings={() => setShowSettings(s => !s)}
+        beatPos={beatPos}
+        bpm={bpm}
       />
+
+      <SectionMap section={sectionView} upcoming={upcoming} />
 
       {showSettings && (
         <WeightPanel

@@ -1,4 +1,20 @@
 export const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+// 表示用のキー名（異名同音を併記）
+export const KEY_LABELS = {
+  'C#': 'C# / D♭',
+  'D#': 'D# / E♭',
+  'F#': 'F# / G♭',
+  'G#': 'G# / A♭',
+  'A#': 'A# / B♭',
+}
+
+// 和声機能の凡例
+export const FUNCTION_LABELS = {
+  T: 'トニック（安定）',
+  SD: 'サブドミナント（展開）',
+  D: 'ドミナント（緊張→解決）',
+  SDm: 'サブドミナントマイナー / 借用（切なさ）',
+}
 
 // 演奏スタイル（コードの鳴らし方）
 export const PLAY_STYLES = [

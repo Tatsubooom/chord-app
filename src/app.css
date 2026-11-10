@@ -1,27 +1,73 @@
-/* 固定幅の枠をやめて画面幅に追従させる（.app が最大幅を決める） */
-#root {
-  width: 100%;
-  max-width: 100%;
-  border-inline: none;
-}
-
-/* 全体コンテナ（画面幅に応じて中身を広く使い、スマホでは左右に余白） */
+/* ===== レイアウト ===== */
 .app {
   width: 100%;
-  max-width: 1000px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 8px 24px 40px;
+  padding: 10px 24px 48px;
   box-sizing: border-box;
 }
 @media (max-width: 640px) {
   .app {
-    padding: 4px 14px 32px;
+    padding: 6px 16px 36px;
   }
 }
 
-/* コード表示＋履歴の背景に薄いピアノを敷くステージ */
+.app__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0 10px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+}
+.app__brand {
+  color: var(--text-h);
+  font-weight: 700;
+}
+.app__summary {
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 共通の小物 */
+.fn {
+  display: inline-block;
+  min-width: 2.2em;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--fn-color, var(--text));
+  border: 1px solid currentColor;
+}
+.fn--T { --fn-color: var(--fn-T); }
+.fn--SD { --fn-color: var(--fn-SD); }
+.fn--D { --fn-color: var(--fn-D); }
+.fn--SDm { --fn-color: var(--fn-SDm); }
+
+.chip {
+  display: inline-block;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  line-height: 1.7;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+}
+
+/* ===== ステージ（背景にピアノ） ===== */
 .stage {
   position: relative;
+  margin-top: 8px;
 }
 .stage > *:not(.piano) {
   position: relative;
@@ -43,256 +89,184 @@
 }
 .piano__black {
   fill: var(--text-h);
-  fill-opacity: 0.05;
+  fill-opacity: 0.045;
   transition: fill-opacity 0.25s ease;
 }
 .piano__white.is-on {
   fill: var(--accent);
-  fill-opacity: 0.18;
+  fill-opacity: 0.16;
 }
 .piano__black.is-on {
   fill: var(--accent);
-  fill-opacity: 0.55;
+  fill-opacity: 0.5;
+}
+.piano__white.is-bass {
+  fill: var(--fn-SD);
+  fill-opacity: 0.18;
+}
+.piano__black.is-bass {
+  fill: var(--fn-SD);
+  fill-opacity: 0.5;
 }
 
-/* 現在のコード表示 */
+/* ===== 現在のコード ===== */
 .chord-display {
   position: relative;
-  height: 120px;
+  min-height: 176px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 0 6px;
+}
+.chord-display__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 1.6em;
+}
+.chord-display__roman {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.chord-display__name {
+  margin: 0;
+  font-size: clamp(44px, 9vw, 72px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.chord-display__voicing {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 1px 10px;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  min-height: 3.6em;
+  align-content: center;
+}
+.voicing__k {
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-align: right;
+}
+.voicing__v {
+  color: var(--text-h);
+  text-align: left;
 }
 
-/* 定番進行ボーナス発生時に、構成音表示の右あたりから真上へ上昇してフェードする通知バッジ */
+/* 定番進行 / 仕掛けの通知: コード名の右上から真上へ上昇してフェード */
 .pattern-popup {
   position: absolute;
-  top: 58%; /* コード構成音の行あたり */
-  left: 62%; /* 中央より右寄り */
+  top: 46%;
+  left: calc(50% + min(26vw, 190px));
+  transform: translateX(-50%);
   z-index: 2;
   pointer-events: none;
   white-space: nowrap;
-  padding: 4px 12px;
+  padding: 3px 12px;
   border-radius: 999px;
-  font-size: 0.8em;
-  font-weight: bold;
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--accent);
   background: var(--accent-bg);
   border: 1px solid var(--accent-border);
   box-shadow: var(--shadow);
   animation: pattern-rise 1.6s ease-out forwards;
 }
-
+.pattern-popup--gesture {
+  color: var(--fn-D);
+  border-color: currentColor;
+  background: var(--surface);
+}
 @keyframes pattern-rise {
-  0% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-  18% {
-    transform: translateY(-6px);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-56px);
-    opacity: 0;
-  }
-}
-
-/* アニメーションを控えたいユーザー向け: バッジは静的に表示 */
-@media (prefers-reduced-motion: reduce) {
-  .pattern-popup {
-    animation: none;
-    transform: translateY(0);
-  }
-}
-.chord-display__name {
-  margin: 0;
-}
-.chord-display__notes {
-  font-size: 1.2em;
-  color: var(--text);
-  margin: 8px 0;
-}
-.chord-display__roman {
-  margin: 0;
-  font-size: 1.1em;
-}
-
-/* コード履歴（右から左へ流れる） */
-.chord-history {
-  display: flex;
-  gap: 16px;
-  flex-direction: row-reverse;
-  overflow-x: auto;
-  justify-content: center;
-  align-items: center;
-  margin: 30px 0;
-  min-height: 60px;
-}
-.chord-history__item {
-  white-space: nowrap;
-  text-align: center;
-}
-.chord-history__name {
-  font-weight: bold;
-  font-size: 1.1em;
-}
-.chord-history__beats {
-  font-size: 0.6em;
-  letter-spacing: 2px;
-  color: var(--text);
-  margin-top: 6px;
-}
-.chord-history__divider {
-  color: var(--text-h);
-  font-weight: bold;
-  margin: 0 4px;
-}
-
-/* 次コード確率メーター（昔のWindowsボリュームバー風の segmented VU メーター） */
-.meter {
-  margin: 24px auto 8px;
-  max-width: 100%;
-}
-.meter__caption {
-  font-size: 0.75em;
-  letter-spacing: 0.08em;
-  color: var(--text);
-  margin-bottom: 10px;
-}
-.meter__cols {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  overflow-x: auto;
-}
-.meter__col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  flex: 1 1 0;
-  min-width: 40px;
-}
-.meter__bar {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  width: 100%;
-  max-width: 34px;
-  padding: 4px;
-  border-radius: 4px;
-  background: #0d0f14;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-.meter__seg {
-  height: 6px;
-  border-radius: 1px;
-  /* 消灯時: くすんだセグメント */
-  background: #262b36;
-  transition: background-color 0.15s ease;
-}
-/* 点灯: モノクロ（白）で下から積み上がる */
-.meter__seg.is-on {
-  background: #f4f5f7;
-}
-.meter__pct {
-  font-size: 0.72em;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-.meter__name {
-  font-size: 0.8em;
-  font-weight: bold;
-  color: var(--text-h);
-  white-space: nowrap;
-}
-.meter__col--top .meter__name {
-  color: var(--accent);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .meter__seg {
-    transition: none;
-  }
-}
-
-/* 再生コントロール */
-.transport {
-  margin: 20px 0;
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-}
-.transport__checkbox {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-/* 生成パラメータ（左=演奏まわり / 右=曲の基本設定の2列。狭い画面では縦積み） */
-.weight-panel {
-  display: flex;
-  gap: 14px 28px;
-  width: min(680px, 100%);
-  margin: 6px auto 0;
-  align-items: flex-start;
-}
-.weight-col {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  0% { translate: 0 0; opacity: 0; }
+  18% { translate: 0 -6px; opacity: 1; }
+  100% { translate: 0 -56px; opacity: 0; }
 }
 @media (max-width: 640px) {
-  .weight-panel {
-    flex-direction: column;
+  .pattern-popup {
+    left: 50%;
+    top: 4px;
   }
 }
-.field {
+
+/* ===== コード履歴（右端が最新。古いものは左へ流れてフェード） ===== */
+.chord-history {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-width: 0;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 14px;
+  overflow: hidden;
+  margin: 18px 0 8px;
+  min-height: 64px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 35%);
+  mask-image: linear-gradient(to right, transparent, #000 35%);
 }
-.field__label {
-  flex: 0 0 64px;
-  text-align: left;
-  font-size: 0.85em;
-  color: var(--text);
+.chord-history__item {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  text-align: center;
+  padding: 4px 6px 2px;
+  border-bottom: 2px solid var(--fn-color, transparent);
 }
-.field select,
-.field input[type='range'] {
-  flex: 1 1 auto;
-  min-width: 0;
+.chord-history__item--fn-T { --fn-color: var(--fn-T); }
+.chord-history__item--fn-SD { --fn-color: var(--fn-SD); }
+.chord-history__item--fn-D { --fn-color: var(--fn-D); }
+.chord-history__item--fn-SDm { --fn-color: var(--fn-SDm); }
+.chord-history__item.is-now .chord-history__name {
+  color: var(--accent);
 }
-.field__value {
-  flex: 0 0 64px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+.chord-history__name {
+  font-weight: 700;
+  color: var(--text-h);
+}
+.chord-history__roman {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--text-dim);
+}
+.chord-history__beats {
+  font-size: 0.42rem;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.chord-history__divider {
+  flex: 0 0 1px;
+  align-self: stretch;
+  background: var(--border-strong);
 }
 
-/* フォーム要素の最小限の統一（色は既存テーマ変数のみ使用） */
+/* ===== 再生コントロール + カウンター ===== */
+.transport {
+  margin: 14px 0;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
 button,
 select {
   font: inherit;
   color: var(--text-h);
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 6px 12px;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 button:hover,
 select:hover {
   border-color: var(--accent-border);
+}
+select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 button:focus-visible,
 select:focus-visible,
@@ -305,48 +279,411 @@ input[type='checkbox'] {
   accent-color: var(--accent);
   cursor: pointer;
 }
-
+.transport__play {
+  min-width: 132px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  padding: 8px 18px;
+}
+.transport__play:hover {
+  filter: brightness(1.08);
+  border-color: var(--accent);
+}
+.transport__play.is-on {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
 .transport__settings {
-  font-size: 0.85em;
-  color: var(--text);
-}
-.field__note {
-  font-size: 0.78em;
+  font-size: 0.85rem;
   color: var(--text);
 }
 
-/* 下部の統合リードアウト（メーター＋装飾確率） */
-.readout {
-  max-width: min(680px, 100%);
-  margin: 30px auto 8px;
+.counter {
+  display: flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-family: var(--mono);
 }
-.readout .meter {
-  margin: 0 0 18px;
+.counter__cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 12px;
+  min-width: 46px;
+}
+.counter__cell + .counter__cell {
+  border-left: 1px solid var(--border);
+}
+.counter__k {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+}
+.counter__v {
+  font-size: 0.95rem;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.counter__v small {
+  font-size: 0.7em;
+  color: var(--text-dim);
+}
+.counter__beats {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  height: 1.4em;
+}
+.counter__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--meter-off);
+}
+.counter__dot.is-down {
+  border-radius: 2px;
+}
+.counter__dot.is-on {
+  background: var(--accent);
 }
 
-/* 装飾の発生確率（横書きで一列に淡々と） */
-.detail {
+/* ===== セクションマップ ===== */
+.section-map {
+  margin: 6px 0 18px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
   text-align: left;
 }
-.detail__caption {
-  font-size: 0.72em;
-  letter-spacing: 0.06em;
+.section-map__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin-bottom: 8px;
+}
+.section-map__title {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  color: var(--text-h);
+  font-weight: 700;
+}
+.section-map__meta {
+  font-size: 0.74rem;
   color: var(--text);
-  margin: 0 0 8px;
-  padding-bottom: 6px;
+}
+.section-map__meta b {
+  color: var(--text-h);
+  font-weight: 600;
+}
+.section-map__legend {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+.section-map__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 4px;
+}
+@media (max-width: 640px) {
+  .section-map__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.bar {
+  position: relative;
+  min-width: 0;
+  padding-top: 13px;
+}
+.bar__num {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+}
+.bar--phrase .bar__num {
+  color: var(--text-h);
+}
+.bar__cells {
+  display: flex;
+  gap: 2px;
+  min-height: 58px;
+}
+.cell {
+  flex-basis: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 5px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border-top: 3px solid var(--fn-color, var(--border-strong));
+  overflow: hidden;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+.cell--fn-T { --fn-color: var(--fn-T); }
+.cell--fn-SD { --fn-color: var(--fn-SD); }
+.cell--fn-D { --fn-color: var(--fn-D); }
+.cell--fn-SDm { --fn-color: var(--fn-SDm); }
+.cell--past {
+  opacity: 0.45;
+}
+.cell--now {
+  background: var(--accent-bg);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
+}
+.cell--blank {
+  background: transparent;
+  border-top-color: transparent;
+}
+.cell__name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell__roman {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell__tag {
+  font-size: 0.6rem;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.section-map__next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  font-size: 0.76rem;
+  color: var(--text-h);
+}
+.section-map__next-item em {
+  font-style: normal;
+  font-size: 0.66rem;
+  color: var(--accent);
+}
+
+/* ===== 設定パネル（4グループ） ===== */
+.weight-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 auto 8px;
+  text-align: left;
+}
+@media (max-width: 720px) {
+  .weight-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.group {
+  margin: 0;
+  min-width: 0;
+  padding: 8px 14px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.group__title {
+  padding: 0 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.group__en {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+}
+.field {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+}
+.field__label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.84rem;
+  color: var(--text-h);
+  line-height: 1.2;
+}
+.field__en {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+}
+.field__control {
+  display: flex;
+  min-width: 0;
+}
+.field__control select,
+.field__control input[type='range'] {
+  width: 100%;
+  min-width: 0;
+}
+.field__control input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+.field__value {
+  min-width: 64px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+}
+.field__hint {
+  grid-column: 2 / -1;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+
+/* ===== 下部リードアウト（メーター + 仕掛けの起きやすさ） ===== */
+.readout {
+  margin: 24px auto 8px;
+  text-align: left;
+}
+.meter {
+  margin: 0 0 18px;
+}
+.meter__caption,
+.detail__caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  color: var(--text-h);
+  margin-bottom: 8px;
+  padding-bottom: 5px;
   border-bottom: 1px solid var(--border);
 }
-/* カード枠をやめて、領域だけを簡易な線で囲う（背景は透明のまま溶け込ませる） */
+.meter__stats {
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+.meter__hint {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+.meter__cols {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 14px 12px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+.meter__col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1 1 0;
+  min-width: 40px;
+}
+.meter__marks {
+  height: 1em;
+  font-size: 0.62rem;
+  line-height: 1;
+  color: var(--accent);
+}
+.meter__bar {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  max-width: 34px;
+  padding: 4px;
+  border-radius: 4px;
+  background: var(--meter-bg);
+  box-sizing: border-box;
+}
+.meter__seg {
+  height: 6px;
+  border-radius: 1px;
+  background: var(--meter-off);
+  transition: background-color 0.15s ease;
+}
+.meter__seg.is-on {
+  background: var(--meter-on);
+}
+.meter__col--chosen .meter__seg.is-on {
+  background: var(--accent);
+}
+.meter__pct {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.meter__name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-h);
+  white-space: nowrap;
+}
+
 .detail__row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 18px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: 6px;
 }
 .detail__item {
-  font-size: 0.82em;
+  font-size: 0.8rem;
   color: var(--text-h);
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pattern-popup {
+    animation: none;
+  }
+  .meter__seg,
+  .cell,
+  .piano__white,
+  .piano__black {
+    transition: none;
+  }
 }

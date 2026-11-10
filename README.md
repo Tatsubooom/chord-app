@@ -42,12 +42,13 @@ src/
     audioEngine.js           Web Audio によるコード再生
   components/
     Piano.jsx                背景の鍵盤（鳴っている音をハイライト）
-    ChordDisplay.jsx         現在のコード + 定番進行ポップアップ
+    ChordDisplay.jsx         現在のコード（機能・仕掛け・ボイシングと声部の動き）+ 通知ポップアップ
     ChordHistory.jsx         流れていくコード履歴
-    TransportControls.jsx    再生 / 設定の開閉
-    WeightPanel.jsx          設定パネル
-    ProbabilityMeter.jsx     次のコードの確率メーター
-    DecorationInfo.jsx       装飾の発生確率
+    TransportControls.jsx    再生 / 位置カウンター（SEC・BAR・BEAT）/ 設定の開閉
+    SectionMap.jsx           今の8小節の俯瞰（鳴らした / 今 / これから、仕掛けラベル）
+    WeightPanel.jsx          設定パネル（曲 / 生成 / 演奏 / 音）
+    ProbabilityMeter.jsx     次の小節の骨格の抽選確率メーター
+    DecorationInfo.jsx       仕掛け・色の起きやすさ
 docs/
   PLAN.md                    改善計画
 ```

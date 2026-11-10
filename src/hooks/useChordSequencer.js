@@ -44,8 +44,11 @@ export function useChordSequencer(settings) {
   const [history, setHistory] = useState([])
   const [distribution, setDistribution] = useState([])
   const [upcoming, setUpcoming] = useState([])
+  const [beatPos, setBeatPos] = useState(null)
+  const [sectionView, setSectionView] = useState(null)
 
   const timerRef = useRef(null)
+  const beatTimersRef = useRef([])
   const historyRef = useRef([])
   const totalBeatsRef = useRef(0)
   const idRef = useRef(0)
@@ -121,8 +124,19 @@ export function useChordSequencer(settings) {
     cooldownRef.current = Math.max(0, cooldownRef.current - 1)
 
     // 直前のボイシングから最小の動きで繋がるように音高を決める
-    const chord = realizeChord(spec, key, scale, voicingRef.current)
+    const prevVoicing = voicingRef.current
+    const chord = realizeChord(spec, key, scale, prevVoicing)
     voicingRef.current = chord.voicing
+    // 各声部がどれだけ動いたか（表示用）。声部数が変わったときは上声の比較を省く
+    chord.motion = prevVoicing
+      ? {
+          bass: chord.voicing.bass - prevVoicing.bass,
+          upper:
+            prevVoicing.upper.length === chord.voicing.upper.length
+              ? chord.voicing.upper.map((m, i) => m - prevVoicing.upper[i])
+              : null,
+        }
+      : null
     chord.id = idRef.current++
     chord.pattern = pattern
     chord.tag = e.gestureStart === false ? null : e.tag ?? null
@@ -152,10 +166,10 @@ export function useChordSequencer(settings) {
         }))
       : []
 
-    const up = queueRef.current.slice(0, UPCOMING_COUNT).map((x, k) => {
+    const view = (x, k, state) => {
       const { name, roman } = describeChord(x.spec, keyPc, mode)
       return {
-        key: `${chord.id}-${k}`,
+        key: `${chord.id}-${state}-${k}`,
         name,
         roman,
         beats: x.beats,
@@ -164,8 +178,24 @@ export function useChordSequencer(settings) {
         tag: x.gestureStart === false ? null : x.tag ?? null,
         func: x.spec.func ?? null,
         sectionIndex: x.sectionIndex,
+        state,
       }
-    })
+    }
+    const up = queueRef.current.slice(0, UPCOMING_COUNT).map((x, k) => view(x, k, 'next'))
+
+    // 今のセクション（8小節）の全体像: 鳴らし終えたもの / 今 / これから
+    const cur = e.sectionIndex
+    const past = historyRef.current
+      .slice(1)
+      .filter(c => c.sectionIndex === cur)
+      .reverse()
+      .map((c, k) => view({ ...c, spec: c, gestureStart: c.tag ? true : false, tag: c.tag }, k, 'past'))
+    const future = queueRef.current.filter(x => x.sectionIndex === cur).map((x, k) => view(x, k, 'next'))
+    const section = {
+      index: cur,
+      info: e.section,
+      items: [...past, view({ ...e }, 0, 'now'), ...future],
+    }
 
     const durSec = (60 / bpm) * e.beats
 
@@ -177,6 +207,17 @@ export function useChordSequencer(settings) {
       arpPhaseRef.current += Math.max(1, Math.round(durSec / stepSec))
     }
     playChord(chord.voicing, durSec, { style: playStyle, bpm, waveform, speedDiv, phaseStart })
+
+    // 拍カウンター（コードの長さぶん、1拍ごとに位置を進める）
+    beatTimersRef.current.forEach(clearTimeout)
+    beatTimersRef.current = Array.from({ length: e.beats }, (_, k) =>
+      setTimeout(
+        () => setBeatPos({ sectionIndex: cur, bar: e.bar, beat: e.beatInBar + k, total: totalBeats + k }),
+        (k * 60 * 1000) / bpm,
+      ),
+    )
+
+    setSectionView(section)
     setCurrentChord(chord)
     setHistory([...historyRef.current])
     setDistribution(dist)
@@ -187,6 +228,7 @@ export function useChordSequencer(settings) {
   function toggle() {
     if (playing) {
       clearTimeout(timerRef.current)
+      beatTimersRef.current.forEach(clearTimeout)
       stopAll()
       historyRef.current = []
       totalBeatsRef.current = 0
@@ -201,6 +243,8 @@ export function useChordSequencer(settings) {
       setCurrentChord(null)
       setDistribution([])
       setUpcoming([])
+      setBeatPos(null)
+      setSectionView(null)
       setPlaying(false)
     } else {
       setPlaying(true)
@@ -209,9 +253,12 @@ export function useChordSequencer(settings) {
 
   useEffect(() => {
     if (playing) next()
-    return () => clearTimeout(timerRef.current)
+    return () => {
+      clearTimeout(timerRef.current)
+      beatTimersRef.current.forEach(clearTimeout)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing])
 
-  return { playing, currentChord, history, distribution, upcoming, toggle }
+  return { playing, currentChord, history, distribution, upcoming, beatPos, sectionView, toggle }
 }

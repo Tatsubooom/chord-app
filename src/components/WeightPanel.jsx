@@ -1,7 +1,35 @@
 import { SCALES } from '../engines/chordEngine'
-import { KEYS, PLAY_STYLES, RHYTHM_SPEEDS, WAVEFORMS } from '../constants'
+import { KEYS, KEY_LABELS, PLAY_STYLES, RHYTHM_SPEEDS, WAVEFORMS } from '../constants'
 
-// key / scale / bpm / temperature など、生成の重み付けを決めるパラメータ群
+// 1行ぶんの設定項目（日本語ラベル + 英字の小見出し + 補足）
+function Field({ label, en, hint, children, value }) {
+  return (
+    <label className="field">
+      <span className="field__label">
+        {label}
+        <span className="field__en">{en}</span>
+      </span>
+      <span className="field__control">{children}</span>
+      {value != null && <span className="field__value">{value}</span>}
+      {hint && <span className="field__hint">{hint}</span>}
+    </label>
+  )
+}
+
+function Group({ title, en, children }) {
+  return (
+    <fieldset className="group">
+      <legend className="group__title">
+        {title} <span className="group__en">{en}</span>
+      </legend>
+      {children}
+    </fieldset>
+  )
+}
+
+const pct = v => `${Math.round(v * 100)}%`
+
+// 設定パネル: 曲 / 生成 / 演奏 / 音 の4グループ
 export default function WeightPanel({
   keyName,
   onKeyChange,
@@ -25,81 +53,22 @@ export default function WeightPanel({
   onWaveformChange,
 }) {
   // 速さは刻み/アルペジオ/積み上げのときだけ効く
-  const showSpeed = playStyle === 'comp' || playStyle === 'arpeggio' || playStyle === 'buildup'
+  const speedActive = playStyle === 'comp' || playStyle === 'arpeggio' || playStyle === 'buildup'
+  const tonal = SCALES[scale]?.intervals.length === 7
 
   return (
     <div className="weight-panel">
-      {/* 左列: 演奏まわり（演奏 / 速さ / 音色 / 代理コード / 複数コード） */}
-      <div className="weight-col">
-        <label className="field">
-          <span className="field__label">演奏</span>
-          <select value={playStyle} onChange={e => onPlayStyleChange(e.target.value)}>
-            {PLAY_STYLES.map(s => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {showSpeed && (
-          <label className="field">
-            <span className="field__label">速さ</span>
-            <select value={rhythmSpeed} onChange={e => onRhythmSpeedChange(e.target.value)}>
-              {RHYTHM_SPEEDS.map(s => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        <label className="field">
-          <span className="field__label">音色</span>
-          <select value={waveform} onChange={e => onWaveformChange(e.target.value)}>
-            {WAVEFORMS.map(w => (
-              <option key={w.value} value={w.value}>
-                {w.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field">
-          <span className="field__label">代理コード</span>
-          <input
-            type="checkbox"
-            checked={enableSubs}
-            onChange={e => onToggleSubs(e.target.checked)}
-          />
-          <span className="field__note">セカンダリー / 借用</span>
-        </label>
-
-        <label className="field">
-          <span className="field__label">複数コード</span>
-          <input
-            type="checkbox"
-            checked={enableMultiChord}
-            onChange={e => onToggleMultiChord(e.target.checked)}
-          />
-          <span className="field__note">小節を分割</span>
-        </label>
-      </div>
-
-      {/* 右列: 曲の基本設定（Key / Scale / Tempo / ランダム度） */}
-      <div className="weight-col">
-        <label className="field">
-          <span className="field__label">Key</span>
+      <Group title="曲" en="SONG">
+        <Field label="キー" en="KEY">
           <select value={keyName} onChange={e => onKeyChange(e.target.value)}>
             {KEYS.map(k => (
-              <option key={k}>{k}</option>
+              <option key={k} value={k}>
+                {KEY_LABELS[k] ?? k}
+              </option>
             ))}
           </select>
-        </label>
-
-        <label className="field">
-          <span className="field__label">Scale</span>
+        </Field>
+        <Field label="スケール" en="SCALE" hint={tonal ? null : 'ペンタトニックでは仕掛け・終止は無効'}>
           <select value={scale} onChange={e => onScaleChange(e.target.value)}>
             {Object.entries(SCALES).map(([value, { label }]) => (
               <option key={value} value={value}>
@@ -107,24 +76,19 @@ export default function WeightPanel({
               </option>
             ))}
           </select>
-        </label>
+        </Field>
+        <Field label="テンポ" en="TEMPO" value={`${bpm} BPM`}>
+          <input type="range" min="50" max="200" value={bpm} onChange={e => onBpmChange(Number(e.target.value))} />
+        </Field>
+      </Group>
 
-        <label className="field">
-          <span className="field__label">Tempo</span>
-          <input
-            type="range"
-            min="50"
-            max="200"
-            value={bpm}
-            onChange={e => onBpmChange(Number(e.target.value))}
-          />
-          <span className="field__value">{bpm} BPM</span>
-        </label>
-
-        <label className="field">
-          <span className="field__label" title="コード進行の多様性（ランダムさ）">
-            ランダム度
-          </span>
+      <Group title="生成" en="GENERATE">
+        <Field
+          label="ランダム度"
+          en="TEMP"
+          value={pct(temperature)}
+          hint="骨格がテンプレートから外れる確率と、7th / 9th の色の付きやすさ"
+        >
           <input
             type="range"
             min="0"
@@ -133,24 +97,50 @@ export default function WeightPanel({
             value={temperature}
             onChange={e => onTemperatureChange(Number(e.target.value))}
           />
-          <span className="field__value">{Math.round(temperature * 100)}%</span>
-        </label>
+        </Field>
+        <Field label="スパイス" en="SPICE" value={pct(spice)} hint="クリシェ・イキスギ・セカンダリー等の仕掛けの量（次のセクションから反映）">
+          <input type="range" min="0" max="1" step="0.01" value={spice} onChange={e => onSpiceChange(Number(e.target.value))} />
+        </Field>
+        <Field label="ノンダイア" en="CHROMATIC" hint="OFF でスケール内の音だけ（aug / dim7 / 借用 / 裏コードを使わない）">
+          <input type="checkbox" checked={enableSubs} onChange={e => onToggleSubs(e.target.checked)} />
+        </Field>
+        <Field label="複数コード" en="SPLIT" hint="1小節に複数のコード（経過和音・クリシェ・ツーファイブ）">
+          <input type="checkbox" checked={enableMultiChord} onChange={e => onToggleMultiChord(e.target.checked)} />
+        </Field>
+      </Group>
 
-        <label className="field">
-          <span className="field__label" title="クリシェ・イキスギ・セカンダリー等の仕掛けの量">
-            スパイス
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={spice}
-            onChange={e => onSpiceChange(Number(e.target.value))}
-          />
-          <span className="field__value">{Math.round(spice * 100)}%</span>
-        </label>
-      </div>
+      <Group title="演奏" en="PLAY">
+        <Field label="奏法" en="STYLE">
+          <select value={playStyle} onChange={e => onPlayStyleChange(e.target.value)}>
+            {PLAY_STYLES.map(s => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="速さ" en="RATE" hint={speedActive ? null : 'ブロック奏法では使いません'}>
+          <select value={rhythmSpeed} disabled={!speedActive} onChange={e => onRhythmSpeedChange(e.target.value)}>
+            {RHYTHM_SPEEDS.map(s => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </Group>
+
+      <Group title="音" en="SOUND">
+        <Field label="音色" en="WAVE" hint="上声の波形。ベースは常に三角波＋サイン波">
+          <select value={waveform} onChange={e => onWaveformChange(e.target.value)}>
+            {WAVEFORMS.map(w => (
+              <option key={w.value} value={w.value}>
+                {w.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </Group>
     </div>
   )
 }
