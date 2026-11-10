@@ -1,50 +1,47 @@
-const SEGMENTS = 18
+const SEGMENTS = 24
 
-// 次の小節の骨格（小節頭の度数）が、どの確率分布から抽選されたかを表示する segmented メーター。
-// ◆ = フレーズテンプレートが狙った度数 / ▲ = 実際に選ばれた度数
+// 次の小節の骨格（小節頭の度数）が、どの確率分布から抽選されたかを横向きのセグメントメーターで示す。
+// 目標 = フレーズテンプレートが狙った度数 / 決定 = 実際に選ばれた度数
 export default function ProbabilityMeter({ distribution }) {
-  if (!distribution.length) {
-    return (
-      <div className="meter meter--empty">
-        <div className="meter__caption">NEXT BAR ▸ 骨格の抽選確率</div>
-        <div className="meter__hint">再生すると、次の小節頭の度数がどの確率で選ばれたかを表示します</div>
-      </div>
-    )
-  }
-
-  const max = Math.max(...distribution.map(d => d.prob), 0.0001)
-  const entropy = -distribution.reduce((a, d) => a + (d.prob > 0 ? d.prob * Math.log2(d.prob) : 0), 0)
-  const maxEntropy = Math.log2(distribution.length)
+  const empty = !distribution.length
+  const entropy = empty ? 0 : -distribution.reduce((a, d) => a + (d.prob > 0 ? d.prob * Math.log2(d.prob) : 0), 0)
+  const maxEntropy = empty ? 0 : Math.log2(distribution.length)
 
   return (
-    <div className="meter" role="img" aria-label="次の小節の骨格の抽選確率">
-      <div className="meter__caption">
-        <span>NEXT BAR ▸ 骨格の抽選確率</span>
-        <span className="meter__stats">
-          ◆ テンプレートの目標 · ▲ 選ばれた度数 · エントロピー {entropy.toFixed(2)} / {maxEntropy.toFixed(2)} bit
-        </span>
-      </div>
-      <div className="meter__cols">
-        {distribution.map(d => {
-          const lit = Math.round((d.prob / max) * SEGMENTS)
-          return (
-            <div key={d.degree} className={'meter__col' + (d.chosen ? ' meter__col--chosen' : '')}>
-              <div className="meter__marks" aria-hidden="true">
-                {d.target ? '◆' : ''}
-                {d.chosen ? '▲' : ''}
-              </div>
-              <div className="meter__bar">
-                {Array.from({ length: SEGMENTS }).map((_, i) => {
-                  const level = SEGMENTS - i // 上から下へ。下から積み上がる
-                  return <span key={i} className={'meter__seg' + (level <= lit ? ' is-on' : '')} />
-                })}
-              </div>
-              <div className="meter__pct">{(d.prob * 100).toFixed(1)}%</div>
-              <div className="meter__name">{d.name}</div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    <section className="meter" aria-label="次の小節の骨格の抽選確率">
+      <header className="label-row">
+        <span className="label">次の小節 · 骨格の抽選</span>
+        {!empty && (
+          <span className="label label--dim">
+            H {entropy.toFixed(2)}/{maxEntropy.toFixed(2)} bit
+          </span>
+        )}
+      </header>
+      {empty ? (
+        <p className="meter__empty">再生すると、次の小節頭のコードがどの確率から選ばれたかを表示します。</p>
+      ) : (
+        <ol className="meter__rows">
+          {distribution.map(d => {
+            const lit = Math.round(d.prob * SEGMENTS)
+            return (
+              <li key={d.degree} className={'meter__row' + (d.chosen ? ' is-chosen' : '')}>
+                <span className="meter__name">{d.name}</span>
+                <span className="meter__bar" aria-hidden="true">
+                  {Array.from({ length: SEGMENTS }, (_, i) => (
+                    <i key={i} className={i < lit ? 'on' : ''} />
+                  ))}
+                </span>
+                <span className="meter__pct">{(d.prob * 100).toFixed(1)}</span>
+                <span className="meter__mark">
+                  {d.target ? '目標' : ''}
+                  {d.target && d.chosen ? '·' : ''}
+                  {d.chosen ? '決定' : ''}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
+      )}
+    </section>
   )
 }

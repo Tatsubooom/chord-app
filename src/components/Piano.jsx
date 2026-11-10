@@ -1,12 +1,12 @@
-// 背景に薄く敷くピアノ鍵盤。現在鳴っている音（midis）の鍵をハイライトし、ベース音は別の色にする。
+// 鍵盤の帯。現在鳴っている上声を朱、ベース音を墨で塗る。
 const LO = 36 // C2
 const HI = 84 // C6
 const BLACK_PC = new Set([1, 3, 6, 8, 10])
 
 const WHITE_W = 12
-const HEIGHT = 100
+const HEIGHT = 64
 const BLACK_W = 7
-const BLACK_H = 62
+const BLACK_H = 40
 
 export default function Piano({ activeMidis = [], bassMidi = null }) {
   const active = new Set(activeMidis)

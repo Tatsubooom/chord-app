@@ -4,45 +4,45 @@ const SECTION_BARS = 8
 
 // 再生ボタン + 現在位置（セクション / 小節 / 拍）のカウンター
 export default function TransportControls({ playing, onToggle, showSettings, onToggleSettings, beatPos, bpm }) {
-  const bar = beatPos ? beatPos.bar : null
+  const bar = beatPos ? beatPos.bar + 1 : null
   const beat = beatPos ? beatPos.beat : null
   const sec = beatPos ? beatPos.sectionIndex + 1 : null
-  const pad = (n, w = 2) => (n == null ? '--' : String(n).padStart(w, '0'))
+  const pad = n => (n == null ? '––' : String(n).padStart(2, '0'))
 
   return (
     <div className="transport">
-      <button className={'transport__play' + (playing ? ' is-on' : '')} onClick={onToggle} aria-pressed={playing}>
-        <span aria-hidden="true">{playing ? '■' : '▶'}</span> {playing ? 'Stop' : 'Play'}
+      <button className={'btn btn--primary' + (playing ? ' is-on' : '')} onClick={onToggle} aria-pressed={playing}>
+        {playing ? '停止' : '再生'}
       </button>
 
-      <div className="counter" aria-label="再生位置">
-        <div className="counter__cell">
-          <span className="counter__k">SEC</span>
-          <span className="counter__v">{pad(sec)}</span>
+      <dl className="counter" aria-label="再生位置">
+        <div>
+          <dt>Sec</dt>
+          <dd>{pad(sec)}</dd>
         </div>
-        <div className="counter__cell">
-          <span className="counter__k">BAR</span>
-          <span className="counter__v">
-            {bar == null ? '-' : bar + 1}
-            <small>/{SECTION_BARS}</small>
-          </span>
+        <div>
+          <dt>Bar</dt>
+          <dd>
+            {bar ?? '–'}
+            <span className="counter__of">/{SECTION_BARS}</span>
+          </dd>
         </div>
-        <div className="counter__cell">
-          <span className="counter__k">BEAT</span>
-          <span className="counter__beats">
+        <div>
+          <dt>Beat</dt>
+          <dd className="counter__beats" aria-label={beat == null ? '' : `${beat + 1}拍目`}>
             {Array.from({ length: BEATS_PER_MEASURE }, (_, i) => (
-              <i key={i} className={'counter__dot' + (beat === i ? ' is-on' : '') + (i === 0 ? ' is-down' : '')} />
+              <i key={i} className={beat === i ? 'on' : ''} />
             ))}
-          </span>
+          </dd>
         </div>
-        <div className="counter__cell">
-          <span className="counter__k">BPM</span>
-          <span className="counter__v">{bpm}</span>
+        <div>
+          <dt>Tempo</dt>
+          <dd>{bpm}</dd>
         </div>
-      </div>
+      </dl>
 
-      <button className="transport__settings" onClick={onToggleSettings} aria-expanded={showSettings}>
-        設定 {showSettings ? '▲' : '▼'}
+      <button className="btn" onClick={onToggleSettings} aria-expanded={showSettings}>
+        {showSettings ? '設定を隠す' : '設定を表示'}
       </button>
     </div>
   )

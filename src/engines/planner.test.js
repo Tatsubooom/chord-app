@@ -96,3 +96,15 @@ test('Blackadder chord resolves to the chord a fifth below its bass', () => {
     })
   }
 })
+
+test('the meter distribution is the probability the bar head was actually drawn with', () => {
+  for (const r of run({ scale: 'major', temperature: 0.3, spice: 0.5, enableSubs: true, enableMultiChord: true }, 20)) {
+    const heads = r.events.filter(e => e.beatInBar === 0)
+    // セクション頭は必ずテンプレートに従う
+    assert.equal(heads[0].dist[heads[0].target], 1)
+    for (const h of heads) {
+      // テンプレートの目標は、少なくとも「従う確率」ぶんの確率を持つ
+      assert.ok(h.dist[h.target] >= 1 - 0.5 * 0.3 - 1e-9)
+    }
+  }
+})

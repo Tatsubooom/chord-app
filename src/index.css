@@ -1,37 +1,23 @@
-/* デザイントークン（ライト / ダーク） */
+/* デザイントークン
+   方針: 紙と墨＋朱1色。カード・角丸・影は使わず、罫線（譜面の小節線のような）で構造を作る。 */
 :root {
-  --text: #5f5a68;
-  --text-h: #0c0a12;
-  --text-dim: #8d8896;
-  --bg: #fbfaf8;
-  --surface: #ffffff;
-  --surface-2: #f3f2ee;
-  --border: #e3e1e6;
-  --border-strong: #c9c6cf;
-  --accent: #8b2cf5;
-  --accent-bg: rgba(139, 44, 245, 0.09);
-  --accent-border: rgba(139, 44, 245, 0.45);
-  --shadow: rgba(0, 0, 0, 0.08) 0 8px 14px -6px, rgba(0, 0, 0, 0.04) 0 2px 4px -1px;
+  --paper: #f6f4ef;
+  --ink: #161512;
+  --ink-2: #3b3934;
+  --ink-3: #66625a; /* 補助テキスト（paper 上で 5:1 以上） */
+  --rule: #d8d4ca;
+  --rule-strong: #161512;
+  --accent: #c93a22; /* 朱 */
+  --accent-wash: rgba(201, 58, 34, 0.1);
+  --on-ink: #f6f4ef;
 
-  /* 和声機能の色 */
-  --fn-T: #2f8f6a;
-  --fn-SD: #2b6fd6;
-  --fn-D: #d0542b;
-  --fn-SDm: #a03fb8;
+  --sans: 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
 
-  /* セグメントメーター */
-  --meter-bg: #e9e7e2;
-  --meter-off: #d6d3cc;
-  --meter-on: #2a2730;
-
-  --sans: system-ui, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', Roboto, sans-serif;
-  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-
-  font: 16px/1.5 var(--sans);
-  letter-spacing: 0.01em;
+  font: 15px/1.5 var(--sans);
   color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  color: var(--ink-2);
+  background: var(--paper);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -40,45 +26,34 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #a3a1ad;
-    --text-h: #f2f1f6;
-    --text-dim: #6f6c7a;
-    --bg: #131318;
-    --surface: #1a1a21;
-    --surface-2: #202029;
-    --border: #2c2c37;
-    --border-strong: #3d3d4a;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.13);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --shadow: rgba(0, 0, 0, 0.4) 0 8px 14px -6px, rgba(0, 0, 0, 0.25) 0 2px 4px -1px;
-
-    --fn-T: #5cc79c;
-    --fn-SD: #6aa2ff;
-    --fn-D: #ff8a5c;
-    --fn-SDm: #d68cf0;
-
-    --meter-bg: #0d0f14;
-    --meter-off: #262b36;
-    --meter-on: #f4f5f7;
+    --paper: #131311;
+    --ink: #edebe5;
+    --ink-2: #c9c6bd;
+    --ink-3: #8f8b81;
+    --rule: #2e2d29;
+    --rule-strong: #edebe5;
+    --accent: #ff6b4f;
+    --accent-wash: rgba(255, 107, 79, 0.14);
+    --on-ink: #131311;
   }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--paper);
 }
 
 #root {
   min-height: 100svh;
-  text-align: center;
 }
 
-h1 {
-  font-weight: 500;
-  color: var(--text-h);
-}
-
+h1,
 p {
   margin: 0;
 }

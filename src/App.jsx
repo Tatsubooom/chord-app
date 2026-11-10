@@ -40,57 +40,58 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app__header">
-        <span className="app__brand">CHORD STREAM</span>
-        <span className="app__summary">
+      <header className="masthead">
+        <span className="masthead__brand">Chord Stream</span>
+        <span className="masthead__summary">
           {KEY_LABELS[key] ?? key} · {SCALES[scale].label} · {bpm} BPM
         </span>
       </header>
 
-      <div className="stage">
+      <main>
+        <div className="stage">
+          <ChordDisplay chord={currentChord} />
+          <ProbabilityMeter distribution={distribution} />
+        </div>
+
         <Piano activeMidis={currentChord?.midis || []} bassMidi={currentChord?.voicing?.bass ?? null} />
-        <ChordDisplay chord={currentChord} />
-        <ChordHistory history={history} />
-      </div>
 
-      <TransportControls
-        playing={playing}
-        onToggle={toggle}
-        showSettings={showSettings}
-        onToggleSettings={() => setShowSettings(s => !s)}
-        beatPos={beatPos}
-        bpm={bpm}
-      />
-
-      <SectionMap section={sectionView} upcoming={upcoming} />
-
-      {showSettings && (
-        <WeightPanel
-          keyName={key}
-          onKeyChange={setKey}
-          scale={scale}
-          onScaleChange={setScale}
+        <TransportControls
+          playing={playing}
+          onToggle={toggle}
+          showSettings={showSettings}
+          onToggleSettings={() => setShowSettings(s => !s)}
+          beatPos={beatPos}
           bpm={bpm}
-          onBpmChange={setBpm}
-          temperature={temperature}
-          onTemperatureChange={setTemperature}
-          spice={spice}
-          onSpiceChange={setSpice}
-          enableMultiChord={enableMultiChord}
-          onToggleMultiChord={setEnableMultiChord}
-          enableSubs={enableSubs}
-          onToggleSubs={setEnableSubs}
-          playStyle={playStyle}
-          onPlayStyleChange={setPlayStyle}
-          rhythmSpeed={rhythmSpeed}
-          onRhythmSpeedChange={setRhythmSpeed}
-          waveform={waveform}
-          onWaveformChange={setWaveform}
         />
-      )}
 
-      <div className="readout">
-        <ProbabilityMeter distribution={distribution} />
+        <SectionMap section={sectionView} upcoming={upcoming} />
+        <ChordHistory history={history} />
+
+        {showSettings && (
+          <WeightPanel
+            keyName={key}
+            onKeyChange={setKey}
+            scale={scale}
+            onScaleChange={setScale}
+            bpm={bpm}
+            onBpmChange={setBpm}
+            temperature={temperature}
+            onTemperatureChange={setTemperature}
+            spice={spice}
+            onSpiceChange={setSpice}
+            enableMultiChord={enableMultiChord}
+            onToggleMultiChord={setEnableMultiChord}
+            enableSubs={enableSubs}
+            onToggleSubs={setEnableSubs}
+            playStyle={playStyle}
+            onPlayStyleChange={setPlayStyle}
+            rhythmSpeed={rhythmSpeed}
+            onRhythmSpeedChange={setRhythmSpeed}
+            waveform={waveform}
+            onWaveformChange={setWaveform}
+          />
+        )}
+
         <DecorationInfo
           scale={scale}
           temperature={temperature}
@@ -98,7 +99,7 @@ export default function App() {
           enableMultiChord={enableMultiChord}
           enableSubs={enableSubs}
         />
-      </div>
+      </main>
     </div>
   )
 }

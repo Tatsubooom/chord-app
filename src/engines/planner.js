@@ -327,10 +327,11 @@ export function planSection(settings, ctx = {}) {
     // テンプレートの骨格はなるべく守る（定番進行として聴こえることが聞きごたえに直結する）。
     // セクション頭は前セクションの終止が準備した着地点なので必ず従う。
     // それ以外は temperature に応じて、遷移表から自由に抽選する。
-    const follow = b === 0 || Math.random() < 1 - 0.5 * temperature
-    const d = follow ? target : weightedRandom(w)
+    const pFollow = b === 0 ? 1 : 1 - 0.5 * temperature
+    const d = Math.random() < pFollow ? target : weightedRandom(w)
     degrees.push(d)
-    dists.push(w.map(x => x / total))
+    // メーターに出すのは「実際に選ばれた確率」: テンプレートに従う分 + 遷移表から抽選する分
+    dists.push(w.map((x, i) => (1 - pFollow) * (x / total) + (i === target ? pFollow : 0)))
     hist = [{ degree: d }, ...hist].slice(0, 8)
     prevDeg = d
   }
