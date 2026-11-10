@@ -21,26 +21,30 @@ npm install
 npm run dev
 ```
 
-その他: `npm run build` / `npm run preview` / `npm run lint`
+その他: `npm run build` / `npm run preview` / `npm run lint` / `npm test`
 
 ## 構成
 
 ```
 src/
   App.jsx                    画面の組み立て（各コンポーネントを配置するだけ）
-  constants.js               キー一覧・拍/小節などの定数
+  constants.js               キー一覧・演奏スタイル・拍/小節などの定数
   hooks/
     useChordSequencer.js     再生ループ・履歴管理（スケジューラ）
   engines/
-    chordEngine.js           スケール定義 / 度数→コード変換 / ボイスリーディング
-    weightEngine.js          マルコフ遷移表 + 進行パターンボーナス + 代理コード
+    chordEngine.js           スケール定義 / 度数→コード変換
+    weightEngine.js          マルコフ遷移表 + 進行パターンボーナス + 音楽理論補正
     audioEngine.js           Web Audio によるコード再生
   components/
-    ChordDisplay.jsx         現在のコード
+    Piano.jsx                背景の鍵盤（鳴っている音をハイライト）
+    ChordDisplay.jsx         現在のコード + 定番進行ポップアップ
     ChordHistory.jsx         流れていくコード履歴
-    TransportControls.jsx    再生 / Multi-Chord 切り替え
-    WeightPanel.jsx          キー / スケール / BPM / temperature
-    ScaleLegend.jsx          スケール各度数の凡例
+    TransportControls.jsx    再生 / 設定の開閉
+    WeightPanel.jsx          設定パネル
+    ProbabilityMeter.jsx     次のコードの確率メーター
+    DecorationInfo.jsx       装飾の発生確率
+docs/
+  PLAN.md                    改善計画
 ```
 
 生成の流れ: `useChordSequencer` が `weightEngine` で次の度数の重みを計算 → 抽選 →
