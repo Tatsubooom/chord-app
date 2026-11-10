@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { SCALES, buildChord, buildChordSpec, realizeChord } from '../engines/chordEngine'
 import { weightedRandom, calcWeights, getPatternMatches, pickPhraseTemplate } from '../engines/weightEngine'
-import { playChord } from '../engines/audioEngine'
+import { playChord, stopAll } from '../engines/audioEngine'
 import {
   BEATS_PER_MEASURE,
   HISTORY_BEATS,
@@ -150,7 +150,7 @@ export function useChordSequencer(settings) {
       const stepSec = 60 / bpm / speedDiv
       arpPhaseRef.current += Math.max(1, Math.round(durSec / stepSec))
     }
-    playChord(chord.midis, durSec, { style: playStyle, bpm, waveform, speedDiv, phaseStart })
+    playChord(chord.voicing, durSec, { style: playStyle, bpm, waveform, speedDiv, phaseStart })
     setCurrentChord(chord)
     setHistory([...historyRef.current])
     setDistribution(dist)
@@ -160,6 +160,7 @@ export function useChordSequencer(settings) {
   function toggle() {
     if (playing) {
       clearTimeout(timerRef.current)
+      stopAll()
       historyRef.current = []
       totalBeatsRef.current = 0
       cooldownRef.current = 0
