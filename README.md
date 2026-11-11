@@ -46,8 +46,8 @@ src/
     ChordHistory.jsx         演奏済みコード（右端から左へ流れる・機能色の下線）
     CircleOfFifths.jsx       五度圏（鳴っている音のノード同士を細い線で直接結ぶ）
     TransportControls.jsx    再生 / 位置カウンター（小節・拍・BPM）
-    WeightPanel.jsx          設定パネル（▽ で開閉。ノブ / パッド + キー・奏法などの選択）
-    Knob.jsx                 DJ コントローラー風のロータリーノブと点灯パッド
+    WeightPanel.jsx          設定パネル（▽ で開閉。スイッチ類 + 奏法・速さ・音色の選択）
+    Knob.jsx                 DJ コントローラー風のノブ / ロータリースイッチ / 縦スライドスイッチ / 点灯パッド / LCD
     DecorationInfo.jsx       仕掛け・色の起きやすさ
 docs/
   PLAN.md                    改善計画

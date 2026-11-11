@@ -1,6 +1,14 @@
 import { SCALES } from '../engines/chordEngine'
 import { KEYS, KEY_LABELS, PLAY_STYLES, RHYTHM_SPEEDS, WAVEFORMS } from '../constants'
-import Knob, { Pad } from './Knob'
+import Knob, { Pad, SlideSwitch } from './Knob'
+
+// スケールのスライドスイッチ: 目盛りの略号と LCD 表示
+const SCALE_SWITCH = [
+  { value: 'major', short: 'MAJ', lcd: 'MAJOR' },
+  { value: 'minor', short: 'MIN', lcd: 'MINOR' },
+  { value: 'majorPenta', short: 'M.PEN', lcd: 'MAJ PENTA' },
+  { value: 'minorPenta', short: 'm.PEN', lcd: 'MIN PENTA' },
+]
 
 // 1行ぶんの設定項目（罫線で区切った表の1行）。行全体がラベルなので、どこを押しても操作できる。
 function Field({ label, hint, children }) {
@@ -24,8 +32,8 @@ function Group({ title, children }) {
 
 const pct = v => `${Math.round(v * 100)}%`
 
-// 設定パネル: 上段に DJ コントローラー風のノブ（テンポ / ランダム度 / スパイス）と点灯パッド（ノンダイア / 複数コード）、
-// 下段にキー・スケール・奏法などの選択を罫線の表で並べる
+// 設定パネル: 上段に DJ コントローラー風のスイッチ類（キー: ロータリースイッチ / スケール: 縦スライドスイッチ /
+// テンポ・ランダム度・スパイス: ノブ / ノンダイア・複数コード: 点灯パッド）、下段に奏法・速さ・音色の選択
 export default function WeightPanel({
   open,
   onToggleOpen,
@@ -67,7 +75,28 @@ export default function WeightPanel({
       </button>
       {open && (
         <div className="settings__body" id="settings-body">
-          <div className="deck" role="group" aria-label="生成のつまみ">
+          <div className="deck" role="group" aria-label="つまみとスイッチ">
+            <Knob
+              label="キー"
+              value={Math.max(0, KEYS.indexOf(keyName))}
+              min={0}
+              max={KEYS.length - 1}
+              step={1}
+              ticks={KEYS.length}
+              led={false}
+              lcd
+              defaultValue={0}
+              onChange={i => onKeyChange(KEYS[i])}
+              format={i => KEY_LABELS[KEYS[i]] ?? KEYS[i]}
+            />
+            <SlideSwitch
+              label="スケール"
+              options={SCALE_SWITCH}
+              value={scale}
+              onChange={onScaleChange}
+              hint={tonal ? undefined : 'ペンタトニックでは仕掛け・終止は無効'}
+            />
+            <span className="deck__sep" aria-hidden="true" />
             <Knob
               label="テンポ"
               value={bpm}
@@ -107,27 +136,6 @@ export default function WeightPanel({
           </div>
 
           <div className="settings__rows">
-            <Group title="曲">
-              <Field label="キー">
-                <select value={keyName} onChange={e => onKeyChange(e.target.value)}>
-                  {KEYS.map(k => (
-                    <option key={k} value={k}>
-                      {KEY_LABELS[k] ?? k}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="スケール" hint={tonal ? null : 'ペンタトニックでは仕掛け・終止は無効'}>
-                <select value={scale} onChange={e => onScaleChange(e.target.value)}>
-                  {Object.entries(SCALES).map(([value, { label }]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </Group>
-
             <Group title="演奏">
               <Field label="奏法">
                 <select value={playStyle} onChange={e => onPlayStyleChange(e.target.value)}>

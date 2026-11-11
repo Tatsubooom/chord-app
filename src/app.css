@@ -340,7 +340,7 @@ button {
 
 /* ---------- 設定（▽ で開閉する見出し + 罫線の表） ---------- */
 .settings {
-  width: min(720px, 100%);
+  width: min(980px, 100%);
   margin: 0 auto;
   text-align: left;
   border-top: 1px solid var(--border);
@@ -382,13 +382,8 @@ button {
   padding-bottom: 12px;
 }
 .settings__rows {
-  columns: 2;
-  column-gap: 32px;
-}
-@media (max-width: 640px) {
-  .settings__rows {
-    columns: 1;
-  }
+  max-width: 520px;
+  margin: 0 auto;
 }
 .settings__group {
   break-inside: avoid;
@@ -563,6 +558,141 @@ select:disabled {
   color: var(--text);
 }
 
+/* ロータリースイッチ（キー）: LED リングの代わりに、今の位置の目盛りが光る */
+.knob__tick.is-on {
+  stroke: var(--accent);
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 2px var(--accent));
+}
+.knob--switch .knob__dial {
+  cursor: grab;
+}
+
+/* LCD 風の表示窓。消灯セグメント（8888…）をうっすら敷いた上に文字を出す */
+.lcd {
+  position: relative;
+  width: 92px;
+  height: 24px;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #0a0b0f;
+  border: 1px solid #2a2c36;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.8);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.lcd__ghost {
+  position: absolute;
+  color: rgba(192, 132, 252, 0.07);
+  letter-spacing: 0.08em;
+}
+.lcd__text {
+  position: relative;
+  color: var(--accent);
+  text-shadow: 0 0 6px rgba(192, 132, 252, 0.55);
+  white-space: nowrap;
+}
+
+/* 縦向きのスライドスイッチ（スケール） */
+.knob--slide {
+  width: 108px;
+}
+.slide {
+  position: relative;
+  height: 76px;
+  width: 84px;
+  display: flex;
+  justify-content: center;
+}
+.slide__track {
+  position: relative;
+  width: 26px;
+  height: 64px;
+  margin: 6px 0;
+  cursor: ns-resize;
+  touch-action: none;
+  outline-offset: 6px;
+}
+.slide__slot {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  bottom: -4px;
+  width: 6px;
+  transform: translateX(-50%);
+  background: #08090c;
+  border: 1px solid #2a2c36;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.slide__notch {
+  position: absolute;
+  left: -2px;
+  width: 6px;
+  height: 1px;
+  background: var(--text-dim);
+}
+.slide__notch::after {
+  content: '';
+  position: absolute;
+  left: 22px;
+  width: 6px;
+  height: 1px;
+  background: var(--text-dim);
+}
+.slide__thumb {
+  position: absolute;
+  left: 50%;
+  width: 26px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(#3a3d49, #23252e);
+  border: 1px solid #4a4d5a;
+  border-radius: 2px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.6);
+  transition: top 0.12s cubic-bezier(0.3, 1.4, 0.5, 1); /* カチッと止まる */
+}
+.slide__thumb::after {
+  /* つまみ中央の発光ライン */
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+}
+.slide__labels {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 62px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.slide__labels li {
+  position: absolute;
+  transform: translateY(-50%);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.slide__labels li.is-on {
+  color: var(--accent);
+}
+.slide__track:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
 /* 押すと点灯するパッド */
 .pad {
   position: relative;
@@ -612,6 +742,9 @@ select:disabled {
   }
   .knob {
     width: 30%;
+  }
+  .knob--slide {
+    width: 34%;
   }
 }
 
@@ -719,6 +852,7 @@ select:disabled {
   .piano__white,
   .piano__black,
   .pad,
+  .slide__thumb,
   .reveal,
   .reveal .setting {
     transition: none;

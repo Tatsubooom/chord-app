@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 //   上下ドラッグ / ホイール / 矢印キーで値を変え、ダブルクリックで初期値に戻す。
 //   周囲の LED リングが値に応じて点灯する。role="slider" でスクリーンリーダーにも値を伝える。
 //   hint は画面には出さず、マウスを乗せたときのツールチップとしてだけ使う。
+//   ticks を段数に合わせ led=false / lcd にすると、カチッと止まるロータリースイッチ（キー選択など）になる。
 const START = -135 // ノブの可動域（度）。真上を 0° とする
 const END = 135
 const TICKS = 11
@@ -20,7 +21,20 @@ function arc(cx, cy, r, from, to) {
   return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`
 }
 
-export default function Knob({ label, value, min, max, step = 1, defaultValue, onChange, format = v => v, hint }) {
+export default function Knob({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  defaultValue,
+  onChange,
+  format = v => v,
+  hint,
+  ticks = TICKS,
+  led = true,
+  lcd = false,
+}) {
   const ref = useRef(null)
   const drag = useRef(null)
   const stateRef = useRef({ value, min, max, step, onChange })
@@ -87,7 +101,7 @@ export default function Knob({ label, value, min, max, step = 1, defaultValue, o
   const [ox, oy] = polar(32, 32, 7, angle)
 
   return (
-    <div className="knob" title={hint}>
+    <div className={'knob' + (lcd ? ' knob--switch' : '')} title={hint}>
       <div
         ref={ref}
         className="knob__dial"
@@ -106,20 +120,99 @@ export default function Knob({ label, value, min, max, step = 1, defaultValue, o
         onDoubleClick={() => defaultValue != null && set(defaultValue)}
       >
         <svg viewBox="0 0 64 64" aria-hidden="true">
-          {Array.from({ length: TICKS }, (_, i) => {
-            const a = START + (i / (TICKS - 1)) * (END - START)
+          {Array.from({ length: ticks }, (_, i) => {
+            const a = START + (i / (ticks - 1)) * (END - START)
+            const active = !led && Math.abs(i / (ticks - 1) - t) < 1e-6
             const [x1, y1] = polar(32, 32, 29.5, a)
             const [x2, y2] = polar(32, 32, 31.5, a)
-            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className="knob__tick" />
+            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className={'knob__tick' + (active ? ' is-on' : '')} />
           })}
-          <path d={arc(32, 32, 25, START, END)} className="knob__ring" />
-          {t > 0.001 && <path d={arc(32, 32, 25, START, angle)} className="knob__led" />}
+          {led && <path d={arc(32, 32, 25, START, END)} className="knob__ring" />}
+          {led && t > 0.001 && <path d={arc(32, 32, 25, START, angle)} className="knob__led" />}
           <circle cx="32" cy="32" r="19" className="knob__cap" />
           <circle cx="32" cy="32" r="16.5" className="knob__grip" />
           <line x1={ox} y1={oy} x2={ix} y2={iy} className="knob__pointer" />
         </svg>
       </div>
-      <div className="knob__value">{format(value)}</div>
+      {lcd ? <Lcd>{format(value)}</Lcd> : <div className="knob__value">{format(value)}</div>}
+      <div className="knob__label">{label}</div>
+    </div>
+  )
+}
+
+// 小さな LCD 風の表示窓
+export function Lcd({ children }) {
+  return (
+    <div className="lcd" aria-hidden="true">
+      <span className="lcd__ghost">{'8'.repeat(8)}</span>
+      <span className="lcd__text">{children}</span>
+    </div>
+  )
+}
+
+// 縦向きのスライドスイッチ。options の段数でカチッと止まり、下の LCD に今の設定を表示する。
+//   つまみのドラッグ / 溝のクリック / 上下キーで切り替える。上が先頭の選択肢。
+export function SlideSwitch({ label, options, value, onChange, hint }) {
+  const trackRef = useRef(null)
+  const dragging = useRef(false)
+  const n = options.length
+  const idx = Math.max(0, options.findIndex(o => o.value === value))
+  const pos = i => `${(i / (n - 1)) * 100}%`
+
+  const pickAt = clientY => {
+    const r = trackRef.current.getBoundingClientRect()
+    const f = (clientY - r.top) / r.height
+    const i = Math.min(n - 1, Math.max(0, Math.round(f * (n - 1))))
+    if (i !== idx) onChange(options[i].value)
+  }
+  const onKeyDown = e => {
+    const map = { ArrowUp: idx - 1, ArrowLeft: idx - 1, ArrowDown: idx + 1, ArrowRight: idx + 1, Home: 0, End: n - 1 }
+    if (e.key in map) {
+      e.preventDefault()
+      const i = Math.min(n - 1, Math.max(0, map[e.key]))
+      if (i !== idx) onChange(options[i].value)
+    }
+  }
+
+  return (
+    <div className="knob knob--slide" title={hint}>
+      <div className="slide">
+        <div
+          ref={trackRef}
+          className="slide__track"
+          role="slider"
+          tabIndex={0}
+          aria-label={label}
+          aria-orientation="vertical"
+          aria-valuemin={0}
+          aria-valuemax={n - 1}
+          aria-valuenow={idx}
+          aria-valuetext={options[idx].lcd}
+          onPointerDown={e => {
+            e.currentTarget.setPointerCapture(e.pointerId)
+            dragging.current = true
+            pickAt(e.clientY)
+          }}
+          onPointerMove={e => dragging.current && pickAt(e.clientY)}
+          onPointerUp={() => (dragging.current = false)}
+          onPointerCancel={() => (dragging.current = false)}
+          onKeyDown={onKeyDown}
+        >
+          <span className="slide__slot" aria-hidden="true" />
+          {options.map((o, i) => (
+            <span key={o.value} className="slide__notch" style={{ top: pos(i) }} aria-hidden="true" />
+          ))}
+          <span className="slide__thumb" style={{ top: pos(idx) }} aria-hidden="true" />
+        </div>
+        <ul className="slide__labels" aria-hidden="true">
+          {options.map((o, i) => (
+            <li key={o.value} style={{ top: pos(i) }} className={i === idx ? 'is-on' : ''}>
+              {o.short}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <Lcd>{options[idx].lcd}</Lcd>
       <div className="knob__label">{label}</div>
     </div>
   )
