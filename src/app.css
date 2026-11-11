@@ -81,27 +81,6 @@
   font-size: 1.1em;
   color: var(--text);
 }
-.chord-display__roman {
-  margin-top: 4px;
-  font-size: 1.05em;
-  color: var(--text-h);
-}
-.chord-display__fn,
-.chord-display__gesture {
-  margin-left: 12px;
-  font-family: var(--mono);
-  font-size: 0.75em;
-  color: var(--text-dim);
-}
-.chord-display__fn[class*='fn-'] {
-  color: var(--fn-color);
-}
-.chord-display__fn::before {
-  content: '機能 ';
-}
-.chord-display__gesture {
-  color: var(--accent);
-}
 .chord-display__motion {
   min-height: 1.5em;
   margin-top: 4px;
@@ -140,38 +119,33 @@
   }
 }
 
-/* ---------- コード履歴 ＋ これからの候補 ----------
-   [ 過去（右→左へ流れて消える） | 今 | 候補（確率が高いほど濃い） ]
-   下線の色 = 和声機能。過去・今は実線、候補は破線 */
+/* ---------- コード履歴（ピアノロールの右端から左へ流れる） ----------
+   下線の色 = 和声機能。古いものほど薄く、左端でフェードアウトする */
 .fn-T { --fn-color: var(--fn-T); }
 .fn-SD { --fn-color: var(--fn-SD); }
 .fn-D { --fn-color: var(--fn-D); }
 .fn-SDm { --fn-color: var(--fn-SDm); }
 
 .chord-history {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: end;
-  gap: 18px;
   margin: 26px 0;
   min-height: 52px;
+  padding-right: 16px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 40%);
+  mask-image: linear-gradient(to right, transparent, #000 40%);
 }
-.chord-history__past,
-.chord-history__next {
+.chord-history__track {
   display: flex;
+  flex-direction: row-reverse; /* DOM 先頭（最新）が右端に来る */
+  justify-content: flex-start;
   align-items: flex-end;
   gap: 18px;
-  overflow: hidden;
-  min-width: 0;
+  min-height: 52px;
+  animation: history-flow 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.chord-history__past {
-  flex-direction: row-reverse;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 45%);
-  mask-image: linear-gradient(to right, transparent, #000 45%);
-}
-.chord-history__next {
-  -webkit-mask-image: linear-gradient(to left, transparent, #000 50%);
-  mask-image: linear-gradient(to left, transparent, #000 50%);
+@keyframes history-flow {
+  from { transform: translateX(72px); }
+  to { transform: translateX(0); }
 }
 .chord-history__item {
   flex: 0 0 auto;
@@ -187,26 +161,13 @@
   color: var(--accent);
   border-bottom-width: 3px;
 }
-.chord-history__item.is-next {
-  font-weight: 500;
-  border-bottom: var(--uw, 1px) dashed var(--fn-color, var(--border-strong));
-  transition: opacity 0.3s ease;
-}
-.chord-history__arrow {
-  align-self: center;
-  font-size: 1.3em;
-  line-height: 1;
-  color: var(--text-dim);
-}
 .chord-history__divider {
   flex: 0 0 1px;
   align-self: stretch;
   background: var(--border-strong);
 }
 @media (max-width: 640px) {
-  .chord-history,
-  .chord-history__past,
-  .chord-history__next {
+  .chord-history__track {
     gap: 12px;
   }
   .chord-history__item {
@@ -524,10 +485,10 @@ input[type='range'] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pattern-popup {
+  .pattern-popup,
+  .chord-history__track {
     animation: none;
   }
-  .chord-history__item.is-next,
   .piano__white,
   .piano__black,
   .switch::after {

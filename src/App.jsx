@@ -21,7 +21,7 @@ export default function App() {
   const [waveform, setWaveform] = useState('triangle')
   const [showSettings, setShowSettings] = useState(true)
 
-  const { playing, currentChord, history, distribution, beatPos, toggle } = useChordSequencer({
+  const { playing, currentChord, history, beatPos, toggle } = useChordSequencer({
     key,
     scale,
     bpm,
@@ -39,7 +39,7 @@ export default function App() {
       <div className="stage">
         <Piano activeMidis={currentChord?.midis || []} bassMidi={currentChord?.voicing?.bass ?? null} />
         <ChordDisplay chord={currentChord} />
-        <ChordHistory history={history} distribution={distribution} />
+        <ChordHistory history={history} />
       </div>
 
       <TransportControls playing={playing} onToggle={toggle} beatPos={beatPos} bpm={bpm} />

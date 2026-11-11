@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { buildChord, realizeChord } from '../engines/chordEngine'
+import { realizeChord } from '../engines/chordEngine'
 import { getPatternMatches } from '../engines/weightEngine'
-import { planSection, degreeFunction } from '../engines/planner'
+import { planSection } from '../engines/planner'
 import { playChord, stopAll } from '../engines/audioEngine'
 import {
   BEATS_PER_MEASURE,
@@ -39,7 +39,6 @@ export function useChordSequencer(settings) {
   const [playing, setPlaying] = useState(false)
   const [currentChord, setCurrentChord] = useState(null)
   const [history, setHistory] = useState([])
-  const [distribution, setDistribution] = useState([])
   const [beatPos, setBeatPos] = useState(null)
 
   const timerRef = useRef(null)
@@ -148,18 +147,6 @@ export function useChordSequencer(settings) {
     totalBeatsRef.current = totalBeats + e.beats
     historyRef.current = trimHistory([chord, ...historyRef.current])
 
-    // 次の小節の骨格が、どの確率分布から選ばれたか（履歴の右側に「これから」として淡く出す）
-    const nextHead = queueRef.current.find(x => x.beatInBar === 0 && x.dist)
-    const dist = nextHead
-      ? nextHead.dist.map((p, d) => ({
-          degree: d,
-          name: buildChord(key, scale, d, 0).name, // 決定的なトライアド名をラベルに
-          prob: p,
-          func: degreeFunction(scale, d),
-          chosen: d === nextHead.chosen,
-          target: d === nextHead.target,
-        }))
-      : []
 
     const durSec = (60 / bpm) * e.beats
 
@@ -183,7 +170,6 @@ export function useChordSequencer(settings) {
 
     setCurrentChord(chord)
     setHistory([...historyRef.current])
-    setDistribution(dist)
     timerRef.current = setTimeout(next, durSec * 1000)
   }
 
@@ -203,7 +189,6 @@ export function useChordSequencer(settings) {
       sectionIdxRef.current = 0
       setHistory([])
       setCurrentChord(null)
-      setDistribution([])
       setBeatPos(null)
       setPlaying(false)
     } else {
@@ -220,5 +205,5 @@ export function useChordSequencer(settings) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing])
 
-  return { playing, currentChord, history, distribution, beatPos, toggle }
+  return { playing, currentChord, history, beatPos, toggle }
 }
