@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { colorChances, gestureChances, splitChance } from '../engines/planner'
+import { SCALES } from '../engines/chordEngine'
 
 const SEGMENTS = 10
 const TICK_MS = 150 // 表示を更新する間隔
@@ -63,6 +64,7 @@ export default function DecorationInfo({ scale, temperature, spice, enableMultiC
     ...gestureChances({ spice, enableSubs, enableMultiChord, scale }).map(g => ({ ...g, note: g.key === '終止' ? 'セクション末' : '箇所' })),
   ]
   const hitRow = rowOfTag(chord?.gesture)
+  const tonal = SCALES[scale]?.intervals.length === 7
 
   const [levels, setLevels] = useState(null) // 再生中の表示値（0〜1）
   const live = useRef({ rows, chord, hitRow })
@@ -97,9 +99,10 @@ export default function DecorationInfo({ scale, temperature, spice, enableMultiC
       <div className="readout__caption">
         <span>仕掛けの起きやすさ</span>
         <span className="readout__dim">
-          ランダム度 {Math.round(temperature * 100)} · スパイス {Math.round(spice * 100)} · 単位あたりの目安 %
+          色・経過和音 ← ランダム度 {Math.round(temperature * 100)} · 仕掛け ← スパイス {Math.round(spice * 100)} · 単位あたりの目安 %
         </span>
       </div>
+      {!tonal && <p className="odds__note">ペンタトニックでは仕掛け（セカンダリー〜終止）は使いません。MAJOR / MINOR で有効になります。</p>}
       <ul className="odds__list">
         {rows.map((r, i) => {
           // 停止中は設定どおりの基本の確率をそのまま表示

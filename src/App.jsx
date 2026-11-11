@@ -8,7 +8,7 @@ import TransportControls from './components/TransportControls'
 import WeightPanel from './components/WeightPanel'
 import PlayControls from './components/PlayControls'
 import DecorationInfo from './components/DecorationInfo'
-import CircleOfFifths from './components/CircleOfFifths'
+import ChordCircle from './components/ChordCircle'
 
 export default function App() {
   const [key, setKey] = useState('C')
@@ -43,8 +43,8 @@ export default function App() {
           <Piano activeMidis={currentChord?.midis || []} bassMidi={currentChord?.voicing?.bass ?? null} />
           <ChordDisplay chord={currentChord} />
           <ChordHistory history={history} />
-          {/* 五度圏はピアノロールの右端に重ねる「補助計器」。主役のコード名はページ中央の軸に置く */}
-          <CircleOfFifths history={history} keyName={key} scale={scale} />
+          {/* 12音の円はピアノロールの右端に重ねる「補助計器」。主役のコード名はページ中央の軸に置く */}
+          <ChordCircle history={history} keyName={key} scale={scale} />
         </div>
       </div>
 
