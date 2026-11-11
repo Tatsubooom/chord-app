@@ -821,7 +821,7 @@ button {
 
 /* 仕掛けの起きやすさ（名前・小さなメーター・数値の一覧） */
 .odds__note {
-  margin: -4px 0 8px;
+  margin: 0 0 8px;
   font-size: 12px;
   color: var(--text);
 }
@@ -835,6 +835,24 @@ button {
 }
 @media (max-width: 640px) {
   .odds__list {
+    column-gap: 16px;
+  }
+}
+/* 上段の固定ブロック: 位置の決まったマス目（行が消えても他の行は動かない） */
+.odds__list--fixed {
+  columns: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
+  margin-bottom: 10px;
+}
+.odds__list--fixed .odds__row.is-closed {
+  /* マス目は残したまま中身だけ消す（隣の行の高さで段が保たれる） */
+  height: 27px;
+  border-bottom-color: var(--border);
+}
+@media (max-width: 640px) {
+  .odds__list--fixed {
     column-gap: 16px;
   }
 }

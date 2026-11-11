@@ -3,6 +3,7 @@ import { colorChances, gestureChances, splitChance, REPEAT_CHANCE } from '../eng
 import { SCALES } from '../engines/chordEngine'
 
 const SEGMENTS = 10
+const FIXED = 4 // 上段の固定ブロックの行数
 const TICK_MS = 150 // 表示を更新する間隔
 const EASE = 0.22 // 1 tick で目標値に近づく割合（なめらかに追従）
 const NOISE = 0.025 // 目標値に乗せる小さなゆらぎ（目標値に対する割合）
@@ -58,10 +59,12 @@ function contextBoost(key, chord) {
 //   ・値へはなめらかに近づき、小さなゆらぎだけを乗せる。停止中は設定どおりの基本の確率
 export default function DecorationInfo({ scale, temperature, spice, enableMultiChord, enableSubs, chord, playing }) {
   const color = colorChances(temperature)
+  // 先頭 FIXED 行は上段の固定ブロック（2行×2列: 左 = 7th / 9th、右 = 経過和音 / くり返し）。
+  // 行優先のグリッドに並べるので、この順番で 左上・右上・左下・右下 になる
   const rows = [
     { key: '7th 色', prob: color.seventh, note: 'セクション' },
-    { key: '9th 色', prob: color.rich, note: 'セクション' },
     { key: '経過和音', prob: splitChance(temperature, enableMultiChord), note: '小節' },
+    { key: '9th 色', prob: color.rich, note: 'セクション' },
     { key: 'くり返し', prob: REPEAT_CHANCE, note: 'セクション' }, // 前のセクションの骨格を A → A' で繰り返す
     ...gestureChances({ spice, enableSubs, enableMultiChord, scale }).map(g => ({ ...g, note: g.key === '終止' ? 'セクション末' : '箇所' })),
   ]
@@ -97,6 +100,31 @@ export default function DecorationInfo({ scale, temperature, spice, enableMultiC
     }
   }, [playing])
 
+  const renderRow = (r, i) => {
+    // 停止中は設定どおりの基本の確率をそのまま表示
+    const level = levels ? levels[i] : Math.min(1, r.prob)
+    const lit = Math.round(level * SEGMENTS)
+    const hit = playing && hitRows.has(r.key)
+    // 今の設定では起こりえない行は畳んで隠す
+    const closed = r.prob <= 0
+    return (
+      <li
+        key={r.key}
+        className={'odds__row' + (closed ? ' is-closed' : '') + (hit ? ' is-hit' : '')}
+        aria-hidden={closed || undefined}
+      >
+        <span className="odds__name">{r.key}</span>
+        <span className="odds__bar" aria-hidden="true">
+          {Array.from({ length: SEGMENTS }, (_, s) => (
+            <i key={s} className={s < lit ? 'on' : ''} />
+          ))}
+        </span>
+        <span className="odds__pct">{Math.round(level * 100)}</span>
+        <span className="odds__unit">/{r.note}</span>
+      </li>
+    )
+  }
+
   return (
     <section className="odds" aria-label="仕掛けの起きやすさ">
       <div className="readout__caption">
@@ -105,33 +133,12 @@ export default function DecorationInfo({ scale, temperature, spice, enableMultiC
           色・経過和音 ← ランダム度 {Math.round(temperature * 100)} · 仕掛け ← スパイス {Math.round(spice * 100)} · 単位あたりの目安 %
         </span>
       </div>
+      {/* 上段: 固定の 2×2（スケール等を変えても位置が動かない。起こりえない行はその場で消えるだけ） */}
+      <ul className="odds__list odds__list--fixed">{rows.slice(0, FIXED).map((r, i) => renderRow(r, i))}</ul>
+      {/* 下段: 仕掛け。起こりえない行は畳まれ、残りが2段組で詰まる（注記も上段を押し下げないよう下段に置く） */}
       {!tonal && <p className="odds__note">ペンタトニックでは仕掛けは使いません（MAJOR / MINOR で有効になります）。</p>}
-      <ul className="odds__list">
-        {rows.map((r, i) => {
-          // 停止中は設定どおりの基本の確率をそのまま表示
-          const level = levels ? levels[i] : Math.min(1, r.prob)
-          const lit = Math.round(level * SEGMENTS)
-          const hit = playing && hitRows.has(r.key)
-          // 今の設定では起こりえない行は畳んで隠す
-          const closed = r.prob <= 0
-          return (
-            <li
-              key={r.key}
-              className={'odds__row' + (closed ? ' is-closed' : '') + (hit ? ' is-hit' : '')}
-              aria-hidden={closed || undefined}
-            >
-              <span className="odds__name">{r.key}</span>
-              <span className="odds__bar" aria-hidden="true">
-                {Array.from({ length: SEGMENTS }, (_, s) => (
-                  <i key={s} className={s < lit ? 'on' : ''} />
-                ))}
-              </span>
-              <span className="odds__pct">{Math.round(level * 100)}</span>
-              <span className="odds__unit">/{r.note}</span>
-            </li>
-          )
-        })}
-      </ul>
+
+      <ul className="odds__list">{rows.slice(FIXED).map((r, i) => renderRow(r, i + FIXED))}</ul>
     </section>
   )
 }
