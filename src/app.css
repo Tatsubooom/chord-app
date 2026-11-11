@@ -331,6 +331,29 @@ button {
   color: var(--text-dim);
 }
 
+/* 奏法の下からせり出す「速さ」の行（高さ 0 ⇄ 内容の高さをなめらかに） */
+.reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.28s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.2s ease;
+}
+.reveal.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.reveal__inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.reveal .setting {
+  transform: translateY(-8px);
+  transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal.is-open .setting {
+  transform: translateY(0);
+}
+
 select {
   width: 100%;
   min-width: 0;
@@ -596,7 +619,9 @@ select:disabled {
   }
   .piano__white,
   .piano__black,
-  .pad {
+  .pad,
+  .reveal,
+  .reveal .setting {
     transition: none;
   }
 }

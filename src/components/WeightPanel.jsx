@@ -138,16 +138,21 @@ export default function WeightPanel({
                   ))}
                 </select>
               </Field>
-              <Field label="速さ" hint={speedActive ? null : 'ブロック奏法では使いません'}>
-                <select value={rhythmSpeed} disabled={!speedActive} onChange={e => onRhythmSpeedChange(e.target.value)}>
-                  {RHYTHM_SPEEDS.map(s => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="音色" hint="上声の波形。ベースは常に三角波＋サイン波">
+              {/* 速さはブロック以外の奏法でだけ効くので、そのときだけ奏法の下からせり出す */}
+              <div className={'reveal' + (speedActive ? ' is-open' : '')} inert={!speedActive}>
+                <div className="reveal__inner">
+                  <Field label="速さ">
+                    <select value={rhythmSpeed} onChange={e => onRhythmSpeedChange(e.target.value)}>
+                      {RHYTHM_SPEEDS.map(s => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              </div>
+              <Field label="音色">
                 <select value={waveform} onChange={e => onWaveformChange(e.target.value)}>
                   {WAVEFORMS.map(w => (
                     <option key={w.value} value={w.value}>
