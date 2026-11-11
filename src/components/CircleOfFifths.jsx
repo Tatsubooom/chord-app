@@ -12,8 +12,8 @@ import { KEYS } from '../constants'
 //   ・内側の小さな点は、直前数コードのルートの足跡
 //   ・中央: 五度圏上のルートの動き（←1 = 5度下行）、つながりの強さ（5段）、共通音の数
 //   ・外側の紫の弧は、今のキーのダイアトニック範囲（五度圏で隣り合う7音）
-//   キーを変えると主音が真上に来るよう円全体がシリンダーのように回り、
-//   スケールを変えたときは（主音が同じでも）ひと回り転がって新しいスケールに切り替わる。
+//   五度圏の並び（C が真上）は固定。キー / スケールを変えると、紫のキーの弧だけが
+//   新しいダイアトニック範囲まで円に沿って滑らかに回り込む（弧の位置が同じならひと回りする）。
 const SIZE = 300
 const C = SIZE / 2
 const R_NODE = 112 // ノードを並べる半径
@@ -29,7 +29,7 @@ const pcsOf = chord => [...new Set((chord?.midis || []).map(m => m % 12))]
 const rootOf = chord => (chord ? (chord.kind === 'blk' ? chord.voicing.bass % 12 : chord.rootPc) : null)
 // -180〜180 に正規化（最短方向に回すため）
 const shortest = d => ((((d + 180) % 360) + 360) % 360) - 180
-// スケールの並び（スライドスイッチと同じ順）。下へ動かすと時計回り、上へ動かすと反時計回りに転がる
+// スケールの並び（スライドスイッチと同じ順）。下へ動かすと時計回り、上へ動かすと反時計回りに回る
 const SCALE_ORDER = ['major', 'minor', 'majorPenta', 'minorPenta']
 
 function polygonPath(pcs, r) {
@@ -77,14 +77,14 @@ export default function CircleOfFifths({ history, keyName, scale }) {
   const tonicIdx = circleIndex(keyPc)
   const majorTonicIdx = circleIndex(minor ? (keyPc + 3) % 12 : keyPc)
 
-  // 主音が真上に来る回転角。直前の角度から最短方向に回るよう累積で持つ
+  // キーの弧の回転角（C メジャーの位置が 0°）。直前の角度から最短方向に回るよう累積で持つ
   // （前回のレンダー結果から状態を導く、React 推奨のパターン）
-  const target = -tonicIdx * 30
+  const target = majorTonicIdx * 30
   const [rot, setRot] = useState({ target, scale, angle: target })
   if (rot.target !== target || rot.scale !== scale) {
     let next = rot.angle + shortest(target - rot.angle)
-    if (rot.scale !== scale) {
-      // スケール変更: 主音の位置は保ったまま、ひと回り転がす
+    if (rot.scale !== scale && next === rot.angle) {
+      // スケールを変えても弧の位置が同じとき（メジャー ⇄ メジャーペンタ等）は、ひと回りさせて変化を見せる
       next += SCALE_ORDER.indexOf(scale) > SCALE_ORDER.indexOf(rot.scale) ? 360 : -360
     }
     setRot({ target, scale, angle: next })
@@ -119,9 +119,7 @@ export default function CircleOfFifths({ history, keyName, scale }) {
   const lit = conn ? Math.round(conn.strength * PIPS) : 0
   const stepsLabel = !conn ? '—' : conn.steps === 0 ? '±0' : conn.steps < 0 ? `←${-conn.steps}` : `→${conn.steps}`
 
-  // 円の回転と、文字を正立させる逆回転（同じイージングで同時に動かす）
-  const spin = { transform: `rotate(${angle}deg)` }
-  const upright = (x, y) => ({ transform: `rotate(${-angle}deg)`, transformOrigin: `${x}px ${y}px` })
+  const arcSpin = { transform: `rotate(${angle}deg)` }
 
   return (
     <div className="cof" aria-hidden="true">
@@ -133,11 +131,13 @@ export default function CircleOfFifths({ history, keyName, scale }) {
         </defs>
 
 
-        <g className="cof__drum" style={spin}>
-          {/* 台座: 隣り合うノードの中心を結んだ12角形（回転中もノードと一緒に動くようドラムの中に置く） */}
+        {/* キーの弧: C メジャーの位置に描いて、回転だけで新しい範囲へ動かす */}
+        <path d={arcPath(-1.5, 5.5, R_KEY)} className="cof__key" style={arcSpin} />
+
+        <g className="cof__ring">
+          {/* 台座: 隣り合うノードの中心を結んだ12角形 */}
           <path d={dodecagonPath(R_NODE)} className="cof__plate" />
           <circle cx={C} cy={C} r={R_NODE} className="cof__orbit" />
-          <path d={arcPath(majorTonicIdx - 1.5, majorTonicIdx + 5.5, R_KEY)} className="cof__key" />
 
           {/* ルートの足跡（古いほど小さく薄い） */}
           {trail.map((idx, k) => {
@@ -177,7 +177,7 @@ export default function CircleOfFifths({ history, keyName, scale }) {
               <g key={idx} className={cls}>
                 {sounding && held.has(pc) && <circle cx={x} cy={y} r={NODE_R + 4.5} className="cof__held" />}
                 <circle cx={x} cy={y} r={NODE_R} />
-                <text x={x} y={y} dy="0.36em" textAnchor="middle" style={upright(x, y)}>
+                <text x={x} y={y} dy="0.36em" textAnchor="middle">
                   {spellPc(pc, { keyFlat })}
                 </text>
               </g>

@@ -73,13 +73,10 @@
   stroke-linecap: round;
   filter: drop-shadow(0 0 3px var(--accent-border)) drop-shadow(0 0 6px rgba(170, 59, 255, 0.45));
 }
-/* キー / スケールの変更で円全体がシリンダーのように回る。
-   操作した瞬間から動き出し（出だしの溜めなし）、長く滑らかに減速して行き過ぎずにぴたりと止まる */
-.cof__drum {
+/* キー / スケールの変更で、紫のキーの弧だけが円に沿って回り込む。
+   操作した瞬間から動き出し、長く滑らかに減速して行き過ぎずにぴたりと止まる */
+.cof__key {
   transform-origin: 150px 150px;
-  transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.cof__node text {
   transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .cof__motion {
@@ -911,8 +908,7 @@ button {
   .cof__now {
     animation: none;
   }
-  .cof__drum,
-  .cof__node text {
+  .cof__key {
     transition: none;
   }
   .piano__white,
