@@ -6,6 +6,7 @@ import ChordHistory from './components/ChordHistory'
 import Piano from './components/Piano'
 import TransportControls from './components/TransportControls'
 import WeightPanel from './components/WeightPanel'
+import PlayControls from './components/PlayControls'
 import DecorationInfo from './components/DecorationInfo'
 import CircleOfFifths from './components/CircleOfFifths'
 
@@ -47,7 +48,16 @@ export default function App() {
         </div>
       </div>
 
-      <TransportControls playing={playing} onToggle={toggle} beatPos={beatPos} bpm={bpm} />
+      <TransportControls playing={playing} onToggle={toggle} beatPos={beatPos} bpm={bpm}>
+        <PlayControls
+          playStyle={playStyle}
+          onPlayStyleChange={setPlayStyle}
+          rhythmSpeed={rhythmSpeed}
+          onRhythmSpeedChange={setRhythmSpeed}
+          waveform={waveform}
+          onWaveformChange={setWaveform}
+        />
+      </TransportControls>
 
       <WeightPanel
         open={showSettings}
@@ -66,12 +76,6 @@ export default function App() {
         onToggleMultiChord={setEnableMultiChord}
         enableSubs={enableSubs}
         onToggleSubs={setEnableSubs}
-        playStyle={playStyle}
-        onPlayStyleChange={setPlayStyle}
-        rhythmSpeed={rhythmSpeed}
-        onRhythmSpeedChange={setRhythmSpeed}
-        waveform={waveform}
-        onWaveformChange={setWaveform}
       />
 
       <div className="readout">

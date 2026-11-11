@@ -54,11 +54,6 @@
     height: calc(100% - min(200px, 60vw) - 14px);
   }
 }
-.cof__plate {
-  /* 下の鍵盤と分けるための半透明の台座 */
-  fill: var(--bg);
-  fill-opacity: 0.82;
-}
 .cof svg {
   display: block;
   width: 100%;
@@ -79,13 +74,13 @@
   filter: drop-shadow(0 0 3px var(--accent-border)) drop-shadow(0 0 6px rgba(170, 59, 255, 0.45));
 }
 /* キー / スケールの変更で円全体がシリンダーのように回る。
-   ゆっくり滑らかに加速し、長く減速して行き過ぎずにぴたりと止まる */
+   操作した瞬間から動き出し（出だしの溜めなし）、長く滑らかに減速して行き過ぎずにぴたりと止まる */
 .cof__drum {
   transform-origin: 150px 150px;
-  transition: transform 1.6s cubic-bezier(0.45, 0, 0.12, 1);
+  transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .cof__node text {
-  transition: transform 1.6s cubic-bezier(0.45, 0, 0.12, 1);
+  transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .cof__motion {
   fill: none;
@@ -130,7 +125,9 @@
   to { opacity: 1; transform: scale(1); }
 }
 .cof__poly {
-  fill: none;
+  /* 背景は鳴っている音を結んだ線の内側だけ（下の鍵盤と分ける） */
+  fill: var(--bg);
+  fill-opacity: 0.85;
   stroke: var(--text-h);
   stroke-width: 1;
 }
@@ -405,6 +402,106 @@ button {
   border-color: var(--accent);
 }
 
+/* ---------- 鳴らし方の切り替え（再生ボタンの横） ---------- */
+.play-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+@media (max-width: 640px) {
+  .play-controls {
+    width: 100%;
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+.seg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.seg__label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+.seg__buttons {
+  display: flex;
+  gap: 4px;
+}
+.seg__btn {
+  position: relative;
+  width: 38px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1d1f27;
+  border: 1px solid #3a3d49;
+  border-radius: 4px; /* 物理ボタンらしさのため、パッドと同じく小さく角を落とす */
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.45);
+  color: var(--text-dim);
+  transition: background-color 0.12s, color 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+.seg__btn:hover {
+  color: var(--text-h);
+  border-color: var(--accent-border);
+}
+.seg__btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.6);
+}
+.seg__btn.is-on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: #2a2140;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.45), 0 0 10px rgba(170, 59, 255, 0.3);
+}
+.seg__icon {
+  width: 20px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  fill: none;
+}
+.seg__icon.is-filled {
+  fill: currentColor;
+  stroke: none;
+}
+.seg__btn.is-on .seg__icon {
+  filter: drop-shadow(0 0 3px var(--accent-border));
+}
+.seg__text {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+/* RATE はブロック以外のときだけ、横からせり出す（幅 0 ⇄ 内容の幅） */
+.hreveal {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  margin-left: -18px; /* 閉じているときは間隔も詰める */
+  transition: grid-template-columns 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.2s ease, margin-left 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.hreveal.is-open {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  margin-left: 0;
+}
+.hreveal__inner {
+  min-width: 0;
+  overflow: hidden;
+}
+
 /* ---------- 設定（▽ で開閉する見出し + 罫線の表） ---------- */
 .settings {
   width: min(980px, 100%);
@@ -448,92 +545,8 @@ button {
 .settings__body {
   padding-bottom: 12px;
 }
-.settings__rows {
-  max-width: 520px;
-  margin: 0 auto;
-}
-.settings__group {
-  break-inside: avoid;
-  padding-top: 8px;
-}
-.settings__group .label {
-  margin: 0;
-  padding: 4px 0;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  border-bottom: 1px solid var(--border-strong);
-}
-.setting {
-  display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
-  align-items: center;
-  column-gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-}
-.setting__label {
-  font-size: 0.85em;
-  color: var(--text-h);
-}
-.setting__control {
-  display: flex;
-  min-width: 0;
-}
-.setting__hint {
-  grid-column: 2;
-  margin-top: 3px;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--text-dim);
-}
 
-/* 奏法の下からせり出す「速さ」の行（高さ 0 ⇄ 内容の高さをなめらかに） */
-.reveal {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition: grid-template-rows 0.28s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.2s ease;
-}
-.reveal.is-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-.reveal__inner {
-  min-height: 0;
-  overflow: hidden;
-}
-.reveal .setting {
-  transform: translateY(-8px);
-  transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.reveal.is-open .setting {
-  transform: translateY(0);
-}
 
-select {
-  width: 100%;
-  min-width: 0;
-  font: inherit;
-  font-size: 0.88em;
-  color: var(--text-h);
-  background: var(--bg);
-  border: 1px solid var(--border-strong);
-  border-radius: 0;
-  padding: 5px 8px;
-  cursor: pointer;
-}
-select:hover {
-  border-color: var(--accent-border);
-}
-select:disabled {
-  color: var(--text-dim);
-  border-style: dashed;
-  cursor: not-allowed;
-}
 /* ---------- DJ コントローラー風のノブとパッド ---------- */
 .deck {
   display: flex;
@@ -903,8 +916,8 @@ select:disabled {
   .piano__black,
   .pad,
   .slide__thumb,
-  .reveal,
-  .reveal .setting {
+  .hreveal,
+  .seg__btn {
     transition: none;
   }
 }

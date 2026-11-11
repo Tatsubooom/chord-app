@@ -1,7 +1,7 @@
 import { BEATS_PER_MEASURE } from '../constants'
 
-// 再生ボタン + 現在位置（小節 / 拍）のカウンター
-export default function TransportControls({ playing, onToggle, beatPos, bpm }) {
+// 再生ボタン + 現在位置（小節 / 拍）のカウンター + 鳴らし方の切り替え（children）
+export default function TransportControls({ playing, onToggle, beatPos, bpm, children }) {
   const beat = beatPos ? beatPos.beat : null
   return (
     <div className="transport">
@@ -21,6 +21,7 @@ export default function TransportControls({ playing, onToggle, beatPos, bpm }) {
           <b>{bpm}</b> bpm
         </span>
       </div>
+      {children}
     </div>
   )
 }

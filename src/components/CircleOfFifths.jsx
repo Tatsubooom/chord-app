@@ -4,7 +4,8 @@ import { circleIndex, connection } from '../engines/connection'
 import { KEYS } from '../constants'
 
 // 五度圏の上でコードを記号的に表示する。
-//   ・今鳴っている音のノードを塗り、ノードの丸同士を細い線で直接結ぶ（ベース音は紫）
+//   ・今鳴っている音のノードを塗り、ノードの丸同士を細い線で直接結ぶ（ベース音は紫）。
+//     背景は線で囲まれた内側だけ暗くし、それ以外はピアノロールが透けて見える
 //   ・前のコードから鳴り続けている音（共通音）のノードには外側のリング
 //   ・前のコードのルート → 今のルートへの曲線の矢印。つながりが強いほど太く濃い
 //   ・内側の小さな点は、直前数コードのルートの足跡
@@ -121,8 +122,6 @@ export default function CircleOfFifths({ history, keyName, scale }) {
           </marker>
         </defs>
 
-        {/* 台座はノードの輪の内側だけ。外側のキーの弧との間は、下のピアノロールが透けて見える */}
-        <circle cx={C} cy={C} r={R_NODE + NODE_R + 3} className="cof__plate" />
 
         <g className="cof__drum" style={spin}>
           <circle cx={C} cy={C} r={R_NODE} className="cof__orbit" />
