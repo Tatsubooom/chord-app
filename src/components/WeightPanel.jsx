@@ -105,7 +105,6 @@ export default function WeightPanel({
             <Pad label="ノンダイア" on={enableSubs} onChange={onToggleSubs} hint="aug / dim7 / 借用 / 裏コード" />
             <Pad label="複数コード" on={enableMultiChord} onChange={onToggleMultiChord} hint="経過和音・クリシェ" />
           </div>
-          <p className="deck__help">つまみは上下ドラッグ・ホイール・矢印キーで操作、ダブルクリックで初期値に戻ります。</p>
 
           <div className="settings__rows">
             <Group title="曲">

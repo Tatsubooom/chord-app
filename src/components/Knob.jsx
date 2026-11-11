@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 // DJ コントローラー風のロータリーノブ。
 //   上下ドラッグ / ホイール / 矢印キーで値を変え、ダブルクリックで初期値に戻す。
 //   周囲の LED リングが値に応じて点灯する。role="slider" でスクリーンリーダーにも値を伝える。
+//   hint は画面には出さず、マウスを乗せたときのツールチップとしてだけ使う。
 const START = -135 // ノブの可動域（度）。真上を 0° とする
 const END = 135
 const TICKS = 11
@@ -120,7 +121,6 @@ export default function Knob({ label, value, min, max, step = 1, defaultValue, o
       </div>
       <div className="knob__value">{format(value)}</div>
       <div className="knob__label">{label}</div>
-      {hint && <div className="knob__hint">{hint}</div>}
     </div>
   )
 }
@@ -135,7 +135,6 @@ export function Pad({ label, on, onChange, hint }) {
       </button>
       <div className="knob__value">&nbsp;</div>
       <div className="knob__label">{label}</div>
-      {hint && <div className="knob__hint">{hint}</div>}
     </div>
   )
 }
