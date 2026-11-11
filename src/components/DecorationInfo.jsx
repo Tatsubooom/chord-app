@@ -1,31 +1,144 @@
-import { getDecorationChances, getSubstituteChance } from '../engines/chordEngine'
-import { MEASURE_SPLIT_SCALE } from '../constants'
+import { useEffect, useRef, useState } from 'react'
+import { colorChances, gestureChances, splitChance, REPEAT_CHANCE } from '../engines/planner'
+import { SCALES } from '../engines/chordEngine'
 
-// テンション/装飾/分割の発生確率を、横書きで淡々と一列に並べるパネル
-export default function DecorationInfo({ temperature, enableMultiChord, enableSubs }) {
-  const splitProb = enableMultiChord
-    ? Math.min(Math.pow(temperature, 2) * MEASURE_SPLIT_SCALE, 1)
-    : 0
+const SEGMENTS = 10
+const FIXED = 4 // 上段の固定ブロックの行数
+const TICK_MS = 150 // 表示を更新する間隔
+const EASE = 0.22 // 1 tick で目標値に近づく割合（なめらかに追従）
+const NOISE = 0.025 // 目標値に乗せる小さなゆらぎ（目標値に対する割合）
 
+// 仕掛けのタグ（プランナーが付けるもの）→ この一覧のどの行か
+function rowOfTag(tag) {
+  if (!tag) return null
+  if (tag.includes('裏')) return '裏コード'
+  if (tag.startsWith('V7/')) return 'セカンダリー'
+  if (tag.includes('クリシェ')) return 'クリシェ'
+  if (tag === 'サブドミナントマイナー' || tag === '♭VI-♭VII-I') return '借用'
+  if (tag === 'ドミナント' || tag === 'V7(和声的)') return '終止'
+  return tag // ツーファイブ / イキスギ / 経過dim / sus4解決 / 転回 はそのまま
+}
+
+// 今のコードの状態から、関係しそうな行を持ち上げる量（0〜）
+function contextBoost(key, chord) {
+  if (!chord) return 0
+  const ivs = chord.ivs || []
+  const has7 = ivs.includes(10) || ivs.includes(11)
+  const f = chord.func
+  switch (key) {
+    case '7th 色':
+      return has7 ? 0.45 : 0
+    case '9th 色':
+      return ivs.includes(14) ? 0.55 : 0
+    case '経過和音':
+      return chord.beats < 4 ? 0.5 : 0
+    case '裏コード':
+    case 'sus4解決':
+    case 'イキスギ':
+      return f === 'D' ? 0.35 : 0
+    case 'セカンダリー':
+      return f === 'D' ? 0.3 : f === 'T' ? 0.15 : 0
+    case 'ツーファイブ':
+      return f === 'SD' ? 0.35 : 0
+    case '借用':
+      return f === 'SD' || f === 'SDm' ? 0.35 : 0
+    case 'クリシェ':
+    case '転回':
+      return f === 'T' ? 0.3 : 0
+    case '終止':
+      return f === 'D' ? 0.4 : 0
+    default:
+      return 0
+  }
+}
+
+// 仕掛け / 色 / 分割 / くり返しの起きやすさ。再生中は今のコードの状態に合わせた「今この瞬間の目安」を表示する。
+//   今の設定（スケール・ノンダイア・複数コード）では起こりえない行は畳んで隠す。
+//   ・設定から決まる基本の確率に、今のコードの機能（D / T / SD）や 7th / 9th などに応じた補正を掛ける
+//   ・今のコードで実際に起きている仕掛けの行は 100 になり、明るく強調される
+//   ・値へはなめらかに近づき、小さなゆらぎだけを乗せる。停止中は設定どおりの基本の確率
+export default function DecorationInfo({ scale, temperature, spice, enableMultiChord, enableSubs, chord, playing }) {
+  const color = colorChances(temperature)
+  // 先頭 FIXED 行は上段の固定ブロック（2行×2列: 左 = 7th / 9th、右 = 経過和音 / くり返し）。
+  // 行優先のグリッドに並べるので、この順番で 左上・右上・左下・右下 になる
   const rows = [
-    ...getDecorationChances(temperature),
-    { key: '代理', prob: getSubstituteChance(temperature, enableSubs) },
-    { key: '分割', prob: splitProb },
+    { key: '7th 色', prob: color.seventh, note: 'セクション' },
+    { key: '経過和音', prob: splitChance(temperature, enableMultiChord), note: '小節' },
+    { key: '9th 色', prob: color.rich, note: 'セクション' },
+    { key: 'くり返し', prob: REPEAT_CHANCE, note: 'セクション' }, // 前のセクションの骨格を A → A' で繰り返す
+    ...gestureChances({ spice, enableSubs, enableMultiChord, scale }).map(g => ({ ...g, note: g.key === '終止' ? 'セクション末' : '箇所' })),
   ]
+  // 今のコードで実際に起きているもの（仕掛け + 今のセクションが繰り返しかどうか）
+  const hitRows = new Set([rowOfTag(chord?.gesture), chord?.section?.templates?.[0] === '(くり返し)' ? 'くり返し' : null])
+  const tonal = SCALES[scale]?.intervals.length === 7
+
+  const [levels, setLevels] = useState(null) // 再生中の表示値（0〜1）
+  const live = useRef({ rows, chord, hitRows })
+  useEffect(() => {
+    live.current = { rows, chord, hitRows }
+  })
+
+  useEffect(() => {
+    if (!playing) return undefined
+    const id = setInterval(() => {
+      const { rows: rs, chord: c, hitRows: hits } = live.current
+      setLevels(prev =>
+        rs.map((r, i) => {
+          const p = Math.min(1, r.prob)
+          if (p <= 0) return 0
+          // 今のコードに関係する仕掛けほど起きやすい（補正は最大で約2倍）
+          const target = hits.has(r.key) ? 1 : Math.min(0.97, p * (1 + contextBoost(r.key, c) * 2))
+          const from = prev?.[i] ?? p
+          const wobble = target * NOISE * (Math.random() * 2 - 1)
+          return Math.min(1, Math.max(0, from + (target - from) * EASE + wobble))
+        }),
+      )
+    }, TICK_MS)
+    return () => {
+      clearInterval(id)
+      setLevels(null)
+    }
+  }, [playing])
+
+  const renderRow = (r, i) => {
+    // 停止中は設定どおりの基本の確率をそのまま表示
+    const level = levels ? levels[i] : Math.min(1, r.prob)
+    const lit = Math.round(level * SEGMENTS)
+    const hit = playing && hitRows.has(r.key)
+    // 今の設定では起こりえない行は畳んで隠す
+    const closed = r.prob <= 0
+    return (
+      <li
+        key={r.key}
+        className={'odds__row' + (closed ? ' is-closed' : '') + (hit ? ' is-hit' : '')}
+        aria-hidden={closed || undefined}
+      >
+        <span className="odds__name">{r.key}</span>
+        <span className="odds__bar" aria-hidden="true">
+          {Array.from({ length: SEGMENTS }, (_, s) => (
+            <i key={s} className={s < lit ? 'on' : ''} />
+          ))}
+        </span>
+        <span className="odds__pct">{Math.round(level * 100)}</span>
+        <span className="odds__unit">/{r.note}</span>
+      </li>
+    )
+  }
 
   return (
-    <div className="detail">
-      <div className="detail__caption">
-        装飾の発生確率 · 多様性 {Math.round(temperature * 100)}%
+    <section className="odds" aria-label="仕掛けの起きやすさ">
+      <div className="readout__caption">
+        <span>仕掛けの起きやすさ</span>
+        <span className="readout__dim">
+          色・経過和音 ← ランダム度 {Math.round(temperature * 100)} · 仕掛け ← スパイス {Math.round(spice * 100)} · 単位あたりの目安 %
+        </span>
       </div>
-      <div className="detail__row">
-        {rows.map(r => (
-          // %は出さず、起きやすさを不透明度で淡く表現
-          <span className="detail__item" key={r.key} style={{ opacity: 0.35 + r.prob * 0.65 }}>
-            {r.key}
-          </span>
-        ))}
-      </div>
-    </div>
+      {/* 上段: 固定の 2×2（スケール等を変えても位置が動かない。起こりえない行はその場で消えるだけ） */}
+      <ul className="odds__list odds__list--fixed">{rows.slice(0, FIXED).map((r, i) => renderRow(r, i))}</ul>
+      {/* 下段: 仕掛け。起こりえない行は畳まれ、残りが2段組で詰まる（注記も上段を押し下げないよう下段に置く） */}
+      {!tonal && <p className="odds__note">ペンタトニックでは仕掛けは使いません（MAJOR / MINOR で有効になります）。</p>}
+
+      <ul className="odds__list">{rows.slice(FIXED).map((r, i) => renderRow(r, i + FIXED))}</ul>
+    </section>
   )
 }

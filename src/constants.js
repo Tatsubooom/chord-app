@@ -1,4 +1,12 @@
 export const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+// 表示用のキー名（異名同音を併記）
+export const KEY_LABELS = {
+  'C#': 'C# / D♭',
+  'D#': 'D# / E♭',
+  'F#': 'F# / G♭',
+  'G#': 'G# / A♭',
+  'A#': 'A# / B♭',
+}
 
 // 演奏スタイル（コードの鳴らし方）
 export const PLAY_STYLES = [
@@ -26,14 +34,11 @@ export const WAVEFORMS = [
 
 // 1小節の拍数
 export const BEATS_PER_MEASURE = 4
-// 履歴として保持する拍数（8小節ぶん）
-export const HISTORY_BEATS = 32
+// 履歴として保持する拍数（32小節ぶん。ピアノロールの左端まで流れて見切れるのに十分な量）
+export const HISTORY_BEATS = 128
 // 区切り線を入れる小節ブロックの大きさ（4小節ごと）
 export const BLOCK_MEASURES = 4
 
-// 小節を分割して複数コードにする確率の全体スケール（小さいほど分割しにくい）。
-// 実際の分割確率は temperature^2 * このスケール。
-export const MEASURE_SPLIT_SCALE = 0.4
 
 // 有名進行ポップアップの発火条件
 // - 直近この数以上のコードが連続一致したら「進行をなぞっている」とみなす

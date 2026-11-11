@@ -1,8 +1,22 @@
 import { SCALES } from '../engines/chordEngine'
-import { KEYS, PLAY_STYLES, RHYTHM_SPEEDS, WAVEFORMS } from '../constants'
+import { KEYS, KEY_LABELS } from '../constants'
+import Knob, { Pad, SlideSwitch } from './Knob'
 
-// key / scale / bpm / temperature など、生成の重み付けを決めるパラメータ群
+// スケールのスライドスイッチ: LCD に出す表示
+const SCALE_SWITCH = [
+  { value: 'major', lcd: 'MAJOR' },
+  { value: 'minor', lcd: 'MINOR' },
+  { value: 'majorPenta', lcd: 'MAJ PENTA' },
+  { value: 'minorPenta', lcd: 'MIN PENTA' },
+]
+
+const pct = v => `${Math.round(v * 100)}%`
+
+// 設定パネル: 上段に DJ コントローラー風のスイッチ類（キー: ロータリースイッチ / スケール: 縦スライドスイッチ /
+// テンポ・ランダム度・スパイス: ノブ / ノンダイア・複数コード: 点灯パッド）。奏法・速さ・音色は再生ボタンの横（PlayControls）
 export default function WeightPanel({
+  open,
+  onToggleOpen,
   keyName,
   onKeyChange,
   scale,
@@ -11,129 +25,90 @@ export default function WeightPanel({
   onBpmChange,
   temperature,
   onTemperatureChange,
+  spice,
+  onSpiceChange,
   enableMultiChord,
   onToggleMultiChord,
   enableSubs,
   onToggleSubs,
-  playStyle,
-  onPlayStyleChange,
-  rhythmSpeed,
-  onRhythmSpeedChange,
-  waveform,
-  onWaveformChange,
 }) {
-  // 速さは刻み/アルペジオ/積み上げのときだけ効く
-  const showSpeed = playStyle === 'comp' || playStyle === 'arpeggio' || playStyle === 'buildup'
+  const tonal = SCALES[scale]?.intervals.length === 7
 
   return (
-    <div className="weight-panel">
-      {/* 左列: 演奏まわり（演奏 / 速さ / 音色 / 代理コード / 複数コード） */}
-      <div className="weight-col">
-        <label className="field">
-          <span className="field__label">演奏</span>
-          <select value={playStyle} onChange={e => onPlayStyleChange(e.target.value)}>
-            {PLAY_STYLES.map(s => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </label>
+    <section className="settings" aria-label="設定">
+      <button className="settings__toggle" onClick={onToggleOpen} aria-expanded={open} aria-controls="settings-body">
+        <span className="settings__title">SETTINGS</span>
+        <span className="settings__summary">
+          {keyName} {SCALES[scale]?.label} · {bpm} BPM · RANDOM {pct(temperature)} · SPICE {pct(spice)}
+        </span>
+        <span className="settings__chevron" aria-hidden="true">
+          {open ? '▽' : '▷'}
+        </span>
+      </button>
+      {open && (
+        <div className="settings__body" id="settings-body">
+          <div className="deck" role="group" aria-label="つまみとスイッチ">
+            <Knob
+              label="KEY"
+              value={Math.max(0, KEYS.indexOf(keyName))}
+              min={0}
+              max={KEYS.length - 1}
+              step={1}
+              ticks={KEYS.length}
+              led={false}
+              lcd
+              defaultValue={0}
+              onChange={i => onKeyChange(KEYS[i])}
+              format={i => KEY_LABELS[KEYS[i]] ?? KEYS[i]}
+            />
+            <SlideSwitch
+              label="SCALE"
+              options={SCALE_SWITCH}
+              value={scale}
+              onChange={onScaleChange}
+              hint={tonal ? undefined : 'ペンタトニックでは仕掛け・終止は無効'}
+            />
+            <span className="deck__sep" aria-hidden="true" />
+            <Knob
+              label="TEMPO"
+              value={bpm}
+              min={50}
+              max={200}
+              step={1}
+              defaultValue={90}
+              onChange={onBpmChange}
+              format={v => `${v}`}
+              hint="BPM"
+            />
+            <Knob
+              label="RANDOM"
+              value={temperature}
+              min={0}
+              max={1}
+              step={0.01}
+              defaultValue={0.3}
+              onChange={onTemperatureChange}
+              format={pct}
+              hint="骨格の外れやすさ・7th/9th"
+            />
+            <Knob
+              label="SPICE"
+              value={spice}
+              min={0}
+              max={1}
+              step={0.01}
+              defaultValue={0.5}
+              onChange={onSpiceChange}
+              format={pct}
+              hint="クリシェ等の仕掛けの量"
+            />
+            <span className="deck__sep" aria-hidden="true" />
+            <Pad label="NON-DIATONIC" on={enableSubs} onChange={onToggleSubs} hint="aug / dim7 / 借用 / 裏コード" />
+            <Pad label="MULTI-CHORD" on={enableMultiChord} onChange={onToggleMultiChord} hint="経過和音・クリシェ" />
+          </div>
 
-        {showSpeed && (
-          <label className="field">
-            <span className="field__label">速さ</span>
-            <select value={rhythmSpeed} onChange={e => onRhythmSpeedChange(e.target.value)}>
-              {RHYTHM_SPEEDS.map(s => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        <label className="field">
-          <span className="field__label">音色</span>
-          <select value={waveform} onChange={e => onWaveformChange(e.target.value)}>
-            {WAVEFORMS.map(w => (
-              <option key={w.value} value={w.value}>
-                {w.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field">
-          <span className="field__label">代理コード</span>
-          <input
-            type="checkbox"
-            checked={enableSubs}
-            onChange={e => onToggleSubs(e.target.checked)}
-          />
-          <span className="field__note">セカンダリー / 借用</span>
-        </label>
-
-        <label className="field">
-          <span className="field__label">複数コード</span>
-          <input
-            type="checkbox"
-            checked={enableMultiChord}
-            onChange={e => onToggleMultiChord(e.target.checked)}
-          />
-          <span className="field__note">小節を分割</span>
-        </label>
-      </div>
-
-      {/* 右列: 曲の基本設定（Key / Scale / Tempo / ランダム度） */}
-      <div className="weight-col">
-        <label className="field">
-          <span className="field__label">Key</span>
-          <select value={keyName} onChange={e => onKeyChange(e.target.value)}>
-            {KEYS.map(k => (
-              <option key={k}>{k}</option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field">
-          <span className="field__label">Scale</span>
-          <select value={scale} onChange={e => onScaleChange(e.target.value)}>
-            {Object.entries(SCALES).map(([value, { label }]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field">
-          <span className="field__label">Tempo</span>
-          <input
-            type="range"
-            min="50"
-            max="200"
-            value={bpm}
-            onChange={e => onBpmChange(Number(e.target.value))}
-          />
-          <span className="field__value">{bpm} BPM</span>
-        </label>
-
-        <label className="field">
-          <span className="field__label" title="コード進行の多様性（ランダムさ）">
-            ランダム度
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={temperature}
-            onChange={e => onTemperatureChange(Number(e.target.value))}
-          />
-          <span className="field__value">{Math.round(temperature * 100)}%</span>
-        </label>
-      </div>
-    </div>
+        </div>
+      )}
+    </section>
   )
 }

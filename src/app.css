@@ -1,29 +1,166 @@
-/* 固定幅の枠をやめて画面幅に追従させる（.app が最大幅を決める） */
-#root {
-  width: 100%;
-  max-width: 100%;
-  border-inline: none;
-}
+/* =========================================================
+   Chord Stream — 初期デザインの構図と配色（黒×紫）を踏襲
+   - 中央に大きなコード、背景に薄いピアノ、その下に流れる履歴
+   - 再生ボタン → 設定（▽で開閉）→ 確率メーター の縦一列
+   - 角丸カード・影・ピル型バッジは使わず、区切りは細い罫線
+   ========================================================= */
 
-/* 全体コンテナ（画面幅に応じて中身を広く使い、スマホでは左右に余白） */
 .app {
   width: 100%;
-  max-width: 1000px;
+  max-width: 1160px;
   margin: 0 auto;
-  padding: 8px 24px 40px;
-  box-sizing: border-box;
+  padding: 0 24px 48px;
 }
 @media (max-width: 640px) {
   .app {
-    padding: 4px 14px 32px;
+    padding: 0 16px 36px;
   }
 }
 
-/* コード表示＋履歴の背景に薄いピアノを敷くステージ */
+/* ---------- ステージ行: 全幅のピアノロール（右端に五度圏を重ねる） ----------
+   コード名・Play・設定がページ中央の同じ軸に並ぶよう、ピアノロールは左右対称に広げる */
+.stage-row {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding: 0 14px;
+}
+@media (max-width: 820px) {
+  .stage-row {
+    padding: 0 10px;
+  }
+}
+
+/* 五度圏（補助計器）: ピアノロールの右端に縦中央で重ねる */
+.stage > .cof {
+  position: absolute;
+  z-index: 2;
+  right: 18px;
+  top: 50%;
+  width: 180px;
+  transform: translateY(-50%);
+}
+@media (max-width: 820px) {
+  /* 狭い画面ではコード名と重なるので、ピアノロールの下に置く */
+  .stage > .cof {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    width: min(200px, 60vw);
+    margin: 14px auto 0;
+  }
+  /* 鍵盤の背景は五度圏の手前（上）までにする。五度圏は正方形なので高さ = 幅 */
+  .stage > .piano {
+    height: calc(100% - min(200px, 60vw) - 14px);
+  }
+}
+.cof svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.cof__orbit {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.cof__key {
+  /* 設定のノブの LED と同じ、ほんのり光る紫 */
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px var(--accent-border)) drop-shadow(0 0 6px rgba(170, 59, 255, 0.45));
+}
+/* キー / スケールの変更で、紫のキーの弧だけが円に沿って回り込む。
+   操作した瞬間から動き出し、長く滑らかに減速して行き過ぎずにぴたりと止まる */
+.cof__key {
+  transform-origin: 150px 150px;
+  transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cof__motion {
+  /* キーの弧と同じ、ほんのり光る紫（矢じりにも同じ光が掛かる） */
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 2.5px var(--accent-border)) drop-shadow(0 0 5px rgba(170, 59, 255, 0.45));
+}
+.cof__arrowhead {
+  fill: var(--accent);
+}
+.cof__held {
+  fill: none;
+  stroke: var(--text-h);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 2.5;
+}
+.cof__now {
+  transform-origin: 150px 150px;
+  animation: cof-in 0.35s ease-out;
+}
+@keyframes cof-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+.cof__plate {
+  /* 隣り合うノードを結んだ12角形の内側だけに敷く、ほんのり透ける台座 */
+  fill: var(--bg);
+  fill-opacity: 0.82;
+}
+.cof__poly {
+  fill: none;
+  stroke: var(--text-h);
+  stroke-width: 1;
+}
+.cof__link {
+  stroke: var(--text-h);
+  stroke-width: 0.6;
+  stroke-opacity: 0.55;
+}
+.cof__node circle {
+  fill: var(--bg);
+  stroke: var(--border-strong);
+  stroke-width: 1.2;
+  transition: fill 0.25s ease, stroke 0.25s ease;
+}
+.cof__node text {
+  font-family: var(--sans);
+  font-size: 17px; /* SVG 座標系での大きさ（表示幅 180px で実寸 10px 前後） */
+  fill: var(--text);
+  transition: fill 0.25s ease;
+}
+.cof__node.is-tonic circle {
+  stroke: var(--accent);
+}
+.cof__node.is-on circle {
+  fill: var(--text-h);
+  stroke: var(--text-h);
+}
+.cof__node.is-on text {
+  fill: var(--bg);
+  font-weight: 700;
+}
+.cof__node.is-bass circle {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+.cof__node.is-bass text {
+  fill: #fff;
+  font-weight: 700;
+}
+/* 余韻（直近のコードで鳴っていた音）。新しいほど濃い灰色 */
+.cof__node.is-echo-0 circle { fill: #5b5f6c; stroke: #5b5f6c; }
+.cof__node.is-echo-1 circle { fill: #3f424d; stroke: #3f424d; }
+.cof__node.is-echo-2 circle { fill: #2c2e37; stroke: #3a3d49; }
+.cof__node.is-echo-0 text,
+.cof__node.is-echo-1 text { fill: var(--text-h); }
+
+/* ---------- ステージ（背景にピアノ） ---------- */
 .stage {
   position: relative;
 }
-.stage > *:not(.piano) {
+.stage > *:not(.piano):not(.cof) {
   position: relative;
   z-index: 1;
 }
@@ -43,310 +180,767 @@
 }
 .piano__black {
   fill: var(--text-h);
-  fill-opacity: 0.05;
+  fill-opacity: 0.045;
   transition: fill-opacity 0.25s ease;
 }
+/* 文字の背後に来るので、ハイライトは控えめに */
 .piano__white.is-on {
   fill: var(--accent);
-  fill-opacity: 0.18;
+  fill-opacity: 0.12;
 }
 .piano__black.is-on {
   fill: var(--accent);
-  fill-opacity: 0.55;
+  fill-opacity: 0.32;
+}
+.piano__white.is-bass {
+  fill: var(--text-h);
+  fill-opacity: 0.08;
+}
+.piano__black.is-bass {
+  fill: var(--text-h);
+  fill-opacity: 0.22;
 }
 
-/* 現在のコード表示 */
+/* ---------- 現在のコード ---------- */
 .chord-display {
   position: relative;
-  height: 120px;
+  min-height: 168px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding-top: 14px;
+}
+.chord-display__name {
+  font-size: clamp(44px, 7vw, 68px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.chord-display__notes {
+  margin-top: 8px;
+  font-size: 1.1em;
+  color: var(--text);
+}
+.chord-display__motion {
+  min-height: 1.5em;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: pre;
 }
 
-/* 定番進行ボーナス発生時に、構成音表示の右あたりから真上へ上昇してフェードする通知バッジ */
+/* 定番進行 / 仕掛けの通知: 構成音の右あたりから真上へ上昇してフェード */
 .pattern-popup {
   position: absolute;
-  top: 58%; /* コード構成音の行あたり */
-  left: 62%; /* 中央より右寄り */
+  top: 54%;
+  left: 64%;
   z-index: 2;
   pointer-events: none;
   white-space: nowrap;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.8em;
-  font-weight: bold;
+  padding: 2px 10px;
+  border-left: 2px solid var(--accent);
+  font-size: 0.82em;
+  font-weight: 700;
   color: var(--accent);
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-  box-shadow: var(--shadow);
+  background: var(--bg);
   animation: pattern-rise 1.6s ease-out forwards;
 }
-
 @keyframes pattern-rise {
-  0% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-  18% {
-    transform: translateY(-6px);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-56px);
-    opacity: 0;
-  }
+  0% { transform: translateY(0); opacity: 0; }
+  18% { transform: translateY(-6px); opacity: 1; }
+  100% { transform: translateY(-56px); opacity: 0; }
 }
-
-/* アニメーションを控えたいユーザー向け: バッジは静的に表示 */
-@media (prefers-reduced-motion: reduce) {
+@media (max-width: 640px) {
   .pattern-popup {
-    animation: none;
-    transform: translateY(0);
+    top: 4px;
+    left: auto;
+    right: 0;
   }
 }
-.chord-display__name {
-  margin: 0;
-}
-.chord-display__notes {
-  font-size: 1.2em;
-  color: var(--text);
-  margin: 8px 0;
-}
-.chord-display__roman {
-  margin: 0;
-  font-size: 1.1em;
-}
 
-/* コード履歴（右から左へ流れる） */
+/* ---------- コード履歴（ピアノロールの右端から左へ流れる） ----------
+   下線の色 = 和声機能。古いものほど薄く、左端でフェードアウトする */
+.fn-T { --fn-color: var(--fn-T); }
+.fn-SD { --fn-color: var(--fn-SD); }
+.fn-D { --fn-color: var(--fn-D); }
+.fn-SDm { --fn-color: var(--fn-SDm); }
+
 .chord-history {
+  margin: 14px 0 16px;
+  min-height: 52px;
+  padding-right: 214px; /* 右端に重ねた五度圏（180px + 余白）の手前で止める */
+  overflow: hidden;
+  /* ピアノロールの左端ぎりぎりで消えるよう、フェードは端の数%だけ */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 7%);
+  mask-image: linear-gradient(to right, transparent, #000 7%);
+}
+.chord-history__track {
   display: flex;
-  gap: 16px;
-  flex-direction: row-reverse;
-  overflow-x: auto;
-  justify-content: center;
-  align-items: center;
-  margin: 30px 0;
-  min-height: 60px;
+  flex-direction: row-reverse; /* DOM 先頭（最新）が右端に来る */
+  justify-content: flex-start;
+  align-items: flex-end;
+  gap: 18px;
+  min-height: 52px;
+  animation: history-flow 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes history-flow {
+  from { transform: translateX(72px); }
+  to { transform: translateX(0); }
 }
 .chord-history__item {
+  flex: 0 0 auto;
   white-space: nowrap;
-  text-align: center;
-}
-.chord-history__name {
-  font-weight: bold;
+  padding-bottom: 4px;
+  font-weight: 700;
   font-size: 1.1em;
+  color: var(--text-h);
+  border-bottom: 2px solid var(--fn-color, var(--border-strong));
 }
-.chord-history__beats {
-  font-size: 0.6em;
-  letter-spacing: 2px;
-  color: var(--text);
-  margin-top: 6px;
+.chord-history__item.is-now {
+  font-size: 1.25em;
+  color: var(--accent);
+  border-bottom-width: 3px;
 }
 .chord-history__divider {
-  color: var(--text-h);
-  font-weight: bold;
-  margin: 0 4px;
+  flex: 0 0 1px;
+  align-self: stretch;
+  background: var(--border-strong);
 }
-
-/* 次コード確率メーター（昔のWindowsボリュームバー風の segmented VU メーター） */
-.meter {
-  margin: 24px auto 8px;
-  max-width: 100%;
+@media (max-width: 820px) {
+  .chord-history {
+    padding-right: 12px;
+  }
 }
-.meter__caption {
-  font-size: 0.75em;
-  letter-spacing: 0.08em;
-  color: var(--text);
-  margin-bottom: 10px;
-}
-.meter__cols {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  overflow-x: auto;
-}
-.meter__col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  flex: 1 1 0;
-  min-width: 40px;
-}
-.meter__bar {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  width: 100%;
-  max-width: 34px;
-  padding: 4px;
-  border-radius: 4px;
-  background: #0d0f14;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-.meter__seg {
-  height: 6px;
-  border-radius: 1px;
-  /* 消灯時: くすんだセグメント */
-  background: #262b36;
-  transition: background-color 0.15s ease;
-}
-/* 点灯: モノクロ（白）で下から積み上がる */
-.meter__seg.is-on {
-  background: #f4f5f7;
-}
-.meter__pct {
-  font-size: 0.72em;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-.meter__name {
-  font-size: 0.8em;
-  font-weight: bold;
-  color: var(--text-h);
-  white-space: nowrap;
-}
-.meter__col--top .meter__name {
-  color: var(--accent);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .meter__seg {
-    transition: none;
+@media (max-width: 640px) {
+  .chord-history__track {
+    gap: 12px;
+  }
+  .chord-history__item {
+    font-size: 1em;
   }
 }
 
-/* 再生コントロール */
+/* ---------- 再生コントロール ---------- */
 .transport {
   margin: 20px 0;
   display: flex;
-  gap: 15px;
+  gap: 20px;
   justify-content: center;
-}
-.transport__checkbox {
-  display: flex;
   align-items: center;
-  gap: 5px;
+  flex-wrap: wrap;
 }
-
-/* 生成パラメータ（左=演奏まわり / 右=曲の基本設定の2列。狭い画面では縦積み） */
-.weight-panel {
-  display: flex;
-  gap: 14px 28px;
-  width: min(680px, 100%);
-  margin: 6px auto 0;
-  align-items: flex-start;
-}
-.weight-col {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-@media (max-width: 640px) {
-  .weight-panel {
-    flex-direction: column;
-  }
-}
-.field {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-width: 0;
-}
-.field__label {
-  flex: 0 0 64px;
-  text-align: left;
-  font-size: 0.85em;
-  color: var(--text);
-}
-.field select,
-.field input[type='range'] {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.field__value {
-  flex: 0 0 64px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-/* フォーム要素の最小限の統一（色は既存テーマ変数のみ使用） */
-button,
-select {
+button {
   font: inherit;
   color: var(--text-h);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
   cursor: pointer;
-  transition: border-color 0.2s;
 }
-button:hover,
-select:hover {
+.transport__play {
+  min-width: 120px;
+  padding: 9px 24px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #fff;
+}
+.transport__play:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.transport__play.is-on {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.transport__pos {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.transport__pos b {
+  font-weight: 600;
+  color: var(--text-h);
+}
+.transport__beats {
+  display: flex;
+  gap: 4px;
+}
+.transport__beats i {
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--border-strong);
+}
+.transport__beats i:first-child {
+  border-color: var(--text);
+}
+.transport__beats i.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- 鳴らし方の切り替え（再生ボタンの横） ---------- */
+.play-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+@media (max-width: 640px) {
+  .play-controls {
+    width: 100%;
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+.seg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.seg__label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+.seg__buttons {
+  display: flex;
+  gap: 4px;
+}
+.seg__btn {
+  position: relative;
+  width: 38px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1d1f27;
+  border: 1px solid #3a3d49;
+  border-radius: 4px; /* 物理ボタンらしさのため、パッドと同じく小さく角を落とす */
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.45);
+  color: var(--text-dim);
+  transition: background-color 0.12s, color 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+.seg__btn:hover {
+  color: var(--text-h);
   border-color: var(--accent-border);
 }
-button:focus-visible,
-select:focus-visible,
-input:focus-visible {
+.seg__btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.6);
+}
+.seg__btn.is-on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: #2a2140;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.45), 0 0 10px rgba(170, 59, 255, 0.3);
+}
+.seg__icon {
+  width: 20px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  fill: none;
+}
+.seg__icon.is-filled {
+  fill: currentColor;
+  stroke: none;
+}
+.seg__btn.is-on .seg__icon {
+  filter: drop-shadow(0 0 3px var(--accent-border));
+}
+.seg__text {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+/* RATE はブロック以外のときだけ、横からせり出す（幅 0 ⇄ 内容の幅） */
+.hreveal {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  margin-left: -18px; /* 閉じているときは間隔も詰める */
+  transition: grid-template-columns 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.2s ease, margin-left 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.hreveal.is-open {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  margin-left: 0;
+}
+.hreveal__inner {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ---------- 設定（▽ で開閉する見出し + 罫線の表） ---------- */
+.settings {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  text-align: left;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.settings__toggle {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 10px 2px;
+  border: 0;
+  text-align: left;
+}
+.settings__toggle:hover .settings__chevron,
+.settings__toggle:hover .settings__title {
+  color: var(--accent);
+}
+.settings__title {
+  font-size: 0.9em;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.settings__summary {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settings__chevron {
+  font-size: 0.9em;
+  color: var(--text);
+}
+.settings__body {
+  padding-bottom: 12px;
+}
+
+
+/* ---------- DJ コントローラー風のノブとパッド ---------- */
+.deck {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 18px 26px;
+  padding: 18px 12px 14px;
+  margin-top: 4px;
+  background: var(--bg-deep);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.deck__sep {
+  align-self: stretch;
+  width: 1px;
+  background: var(--border);
+}
+.knob {
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.knob__dial {
+  width: 76px;
+  height: 76px;
+  cursor: ns-resize;
+  touch-action: none; /* スマホでもドラッグで回せるように */
+  user-select: none;
+  border-radius: 50%;
+}
+.knob__dial svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.knob__tick {
+  stroke: var(--text-dim);
+  stroke-width: 1;
+}
+.knob__ring {
+  fill: none;
+  stroke: var(--meter-off);
+  stroke-width: 3.5;
+  stroke-linecap: butt;
+}
+.knob__led {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3.5;
+  stroke-linecap: butt;
+  filter: drop-shadow(0 0 2px var(--accent-border));
+}
+.knob__cap {
+  fill: #23252e;
+  stroke: #3a3d49;
+  stroke-width: 1;
+}
+.knob__grip {
+  fill: none;
+  stroke: #2d2f3a;
+  stroke-width: 1.2;
+  stroke-dasharray: 1.2 2.2; /* ローレット（滑り止め）の刻み */
+}
+.knob__pointer {
+  stroke: var(--text-h);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.knob__dial:hover .knob__cap {
+  stroke: var(--accent-border);
+}
+.knob__dial:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-input[type='range'],
-input[type='checkbox'] {
-  accent-color: var(--accent);
-  cursor: pointer;
+.knob__value {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
 }
-
-.transport__settings {
-  font-size: 0.85em;
-  color: var(--text);
-}
-.field__note {
-  font-size: 0.78em;
+.knob__label {
+  font-size: 12px;
   color: var(--text);
 }
 
-/* 下部の統合リードアウト（メーター＋装飾確率） */
+/* ロータリースイッチ（キー）: LED リングの代わりに、今の位置の目盛りが光る */
+.knob__tick.is-on {
+  stroke: var(--accent);
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 2px var(--accent));
+}
+.knob--switch .knob__dial {
+  cursor: grab;
+}
+
+/* LCD 風の表示窓。消灯セグメント（8888…）をうっすら敷いた上に文字を出す */
+.lcd {
+  position: relative;
+  width: 92px;
+  height: 24px;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #0a0b0f;
+  border: 1px solid #2a2c36;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.8);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.lcd__ghost {
+  position: absolute;
+  color: rgba(192, 132, 252, 0.07);
+  letter-spacing: 0.08em;
+}
+.lcd__text {
+  position: relative;
+  color: var(--accent);
+  text-shadow: 0 0 6px rgba(192, 132, 252, 0.55);
+  white-space: nowrap;
+}
+
+/* 縦向きのスライドスイッチ（スケール） */
+.knob--slide {
+  width: 96px;
+}
+.slide {
+  /* スイッチ全体（つまみの周りも含む）を操作範囲にする */
+  position: relative;
+  height: 76px;
+  width: 76px;
+  display: flex;
+  justify-content: center;
+  cursor: ns-resize;
+  touch-action: none; /* スマホでもドラッグで動かせるように */
+  user-select: none;
+}
+.slide__track {
+  position: relative;
+  width: 26px;
+  height: 60px;
+  margin: 8px 0;
+  pointer-events: none; /* 判定は外側の .slide で受ける */
+}
+.slide__slot {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  bottom: -4px;
+  width: 6px;
+  transform: translateX(-50%);
+  background: #08090c;
+  border: 1px solid #2a2c36;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.slide__notch {
+  position: absolute;
+  left: -2px;
+  width: 6px;
+  height: 1px;
+  background: var(--text-dim);
+}
+.slide__notch::after {
+  content: '';
+  position: absolute;
+  left: 22px;
+  width: 6px;
+  height: 1px;
+  background: var(--text-dim);
+}
+.slide__thumb {
+  position: absolute;
+  left: 50%;
+  width: 32px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(#3a3d49, #23252e);
+  border: 1px solid #4a4d5a;
+  border-radius: 2px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.6);
+  transition: top 0.12s cubic-bezier(0.3, 1.4, 0.5, 1); /* カチッと止まる */
+}
+.slide__thumb::after {
+  /* つまみ中央の発光ライン */
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+}
+.slide:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 押すと点灯するパッド */
+.pad {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 6px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: #1d1f27;
+  border: 1px solid #3a3d49;
+  border-radius: 6px; /* 物理ボタンらしさのため、ここだけ小さく角を落とす */
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.45);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: background-color 0.12s, box-shadow 0.12s;
+}
+.pad:active {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  transform: translateY(1px);
+}
+.pad__led {
+  width: 22px;
+  height: 4px;
+  background: var(--meter-off);
+}
+.pad.is-on {
+  color: var(--text-h);
+  border-color: var(--accent);
+  background: #2a2140;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.45), 0 0 12px rgba(170, 59, 255, 0.35);
+}
+.pad.is-on .pad__led {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+@media (max-width: 640px) {
+  .deck {
+    gap: 14px 10px;
+    padding: 14px 6px 12px;
+  }
+  .deck__sep {
+    display: none;
+  }
+  .knob {
+    width: 30%;
+  }
+  .knob--slide {
+    width: 34%;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- 下部リードアウト（メーター + 仕掛けの起きやすさ） ---------- */
 .readout {
-  max-width: min(680px, 100%);
+  width: min(720px, 100%);
   margin: 30px auto 8px;
-}
-.readout .meter {
-  margin: 0 0 18px;
-}
-
-/* 装飾の発生確率（横書きで一列に淡々と） */
-.detail {
   text-align: left;
 }
-.detail__caption {
-  font-size: 0.72em;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  margin: 0 0 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border);
-}
-/* カード枠をやめて、領域だけを簡易な線で囲う（背景は透明のまま溶け込ませる） */
-.detail__row {
+.readout__caption {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 18px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-.detail__item {
-  font-size: 0.82em;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  letter-spacing: 0.06em;
   color: var(--text-h);
+}
+.readout__dim {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--text-dim);
+}
+
+/* 仕掛けの起きやすさ（名前・小さなメーター・数値の一覧） */
+.odds__note {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+.odds__list {
+  /* 2段組。畳んだ行の分だけ自然に詰まるよう、グリッドではなく段組で流す */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  columns: 2;
+  column-gap: 28px;
+}
+@media (max-width: 640px) {
+  .odds__list {
+    column-gap: 16px;
+  }
+}
+/* 上段の固定ブロック: 位置の決まったマス目（行が消えても他の行は動かない） */
+.odds__list--fixed {
+  columns: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
+  margin-bottom: 10px;
+}
+.odds__list--fixed .odds__row.is-closed {
+  /* マス目は残したまま中身だけ消す（隣の行の高さで段が保たれる） */
+  height: 27px;
+  border-bottom-color: var(--border);
+}
+@media (max-width: 640px) {
+  .odds__list--fixed {
+    column-gap: 16px;
+  }
+}
+.odds__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 60px 26px 80px;
+  align-items: center;
+  gap: 8px;
+  height: 27px;
+  overflow: hidden;
+  break-inside: avoid;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-h);
+  transition: height 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.2s ease, border-color 0.3s ease;
+}
+/* 今の設定では起こりえない行: 高さ 0 まで畳む */
+.odds__row.is-closed {
+  height: 0;
+  opacity: 0;
+  border-bottom-color: transparent;
+}
+@media (max-width: 640px) {
+  .odds__row {
+    grid-template-columns: minmax(0, 1fr) 40px 24px;
+  }
+  .odds__unit {
+    display: none;
+  }
+}
+.odds__name {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.odds__bar {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 1px;
+  height: 8px;
+}
+.odds__bar i {
+  background: var(--meter-off);
+}
+.odds__bar i.on {
+  background: var(--meter-on);
+}
+/* 今のコードで実際に起きた仕掛け */
+.odds__row.is-hit {
+  background: rgba(243, 244, 246, 0.05);
+}
+.odds__row.is-hit .odds__name,
+.odds__row.is-hit .odds__pct {
+  color: var(--text-h);
+  font-weight: 700;
+}
+.odds__pct,
+.odds__unit {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.odds__pct {
+  text-align: right;
+}
+.odds__unit {
+  color: var(--text-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pattern-popup,
+  .chord-history__track,
+  .cof__now {
+    animation: none;
+  }
+  .cof__key {
+    transition: none;
+  }
+  .piano__white,
+  .piano__black,
+  .pad,
+  .odds__row,
+  .slide__thumb,
+  .hreveal,
+  .seg__btn {
+    transition: none;
+  }
 }

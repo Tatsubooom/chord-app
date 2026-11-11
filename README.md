@@ -21,27 +21,40 @@ npm install
 npm run dev
 ```
 
-その他: `npm run build` / `npm run preview` / `npm run lint`
+その他: `npm run build` / `npm run preview` / `npm run lint` / `npm test`
+
+生成される進行をテキストで確認: `npm run sample -- --key C --scale major --temp 0.3 --spice 0.5`
 
 ## 構成
 
 ```
 src/
   App.jsx                    画面の組み立て（各コンポーネントを配置するだけ）
-  constants.js               キー一覧・拍/小節などの定数
+  constants.js               キー一覧・演奏スタイル・拍/小節などの定数
   hooks/
     useChordSequencer.js     再生ループ・履歴管理（スケジューラ）
   engines/
-    chordEngine.js           スケール定義 / 度数→コード変換 / ボイスリーディング
-    weightEngine.js          マルコフ遷移表 + 進行パターンボーナス + 代理コード
+    planner.js               8小節先読みの進行プランナー（骨格・色・仕掛け・終止）
+    chordEngine.js           スケール定義 / 度数→コード spec / spec→具体的なコード
+    theory.js                構成音程からコード名・ローマ数字を生成
+    voicing.js               ベース＋上声のボイスリーディング
+    weightEngine.js          マルコフ遷移表 + 進行パターンボーナス + 音楽理論補正
     audioEngine.js           Web Audio によるコード再生
   components/
-    ChordDisplay.jsx         現在のコード
-    ChordHistory.jsx         流れていくコード履歴
-    TransportControls.jsx    再生 / Multi-Chord 切り替え
-    WeightPanel.jsx          キー / スケール / BPM / temperature
-    ScaleLegend.jsx          スケール各度数の凡例
+    Piano.jsx                背景の鍵盤（鳴っている音をハイライト）
+    ChordDisplay.jsx         現在のコード（構成音・声部の動き）+ 通知ポップアップ
+    ChordHistory.jsx         演奏済みコード（右端から左へ流れる・機能色の下線）
+    CircleOfFifths.jsx       五度圏（鳴っている音を線で結ぶ・つながりの強さ・キーの範囲）
+    TransportControls.jsx    再生 / 位置カウンター（小節・拍・BPM）
+    PlayControls.jsx         再生ボタン横の鳴らし方（STYLE / RATE / SOUND の切り替えボタン）
+    WeightPanel.jsx          設定パネル（▽ で開閉。キー・スケール・ノブ・パッド）
+    Knob.jsx                 DJ コントローラー風のノブ / ロータリースイッチ / 縦スライドスイッチ / 点灯パッド / LCD
+    DecorationInfo.jsx       仕掛け・色の起きやすさ
+docs/
+  PLAN.md                    改善計画
 ```
 
-生成の流れ: `useChordSequencer` が `weightEngine` で次の度数の重みを計算 → 抽選 →
-`chordEngine` でコード化 → `audioEngine` で発音、を BPM に合わせて `setTimeout` で繰り返します。
+生成の流れ: `useChordSequencer` が `planner` で8小節ぶんを先読み計画
+（骨格は `weightEngine` の重みから抽選 → 色付け → クリシェ等の仕掛けを差し込み）→
+再生時に `chordEngine` / `voicing` で前のコードに繋がる音高を決定 → `audioEngine` で発音、を BPM に合わせて繰り返します。
+scripts/ には生成結果をテキストで書き出す `sample.js` があります。

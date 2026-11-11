@@ -1,6 +1,6 @@
-// 背景に薄く敷くピアノ鍵盤。現在鳴っている音（midis）の鍵をハイライトする。
+// 背景に薄く敷くピアノ鍵盤。鳴っている上声を紫、ベース音を淡い白でハイライトする。
 const LO = 36 // C2
-const HI = 72 // C5
+const HI = 84 // C6
 const BLACK_PC = new Set([1, 3, 6, 8, 10])
 
 const WHITE_W = 12
@@ -8,8 +8,9 @@ const HEIGHT = 100
 const BLACK_W = 7
 const BLACK_H = 62
 
-export default function Piano({ activeMidis = [] }) {
+export default function Piano({ activeMidis = [], bassMidi = null }) {
   const active = new Set(activeMidis)
+  const cls = (base, m) => base + (active.has(m) ? ' is-on' : '') + (m === bassMidi ? ' is-bass' : '')
 
   const whites = []
   const blacks = []
@@ -38,7 +39,7 @@ export default function Piano({ activeMidis = [] }) {
           y="0"
           width={WHITE_W}
           height={HEIGHT}
-          className={'piano__white' + (active.has(k.m) ? ' is-on' : '')}
+          className={cls('piano__white', k.m)}
         />
       ))}
       {blacks.map(k => (
@@ -48,7 +49,7 @@ export default function Piano({ activeMidis = [] }) {
           y="0"
           width={BLACK_W}
           height={BLACK_H}
-          className={'piano__black' + (active.has(k.m) ? ' is-on' : '')}
+          className={cls('piano__black', k.m)}
         />
       ))}
     </svg>

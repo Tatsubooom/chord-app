@@ -1,14 +1,27 @@
-export default function TransportControls({ playing, onToggle, showSettings, onToggleSettings }) {
+import { BEATS_PER_MEASURE } from '../constants'
+
+// 再生ボタン + 現在位置（小節 / 拍）のカウンター + 鳴らし方の切り替え（children）
+export default function TransportControls({ playing, onToggle, beatPos, bpm, children }) {
+  const beat = beatPos ? beatPos.beat : null
   return (
     <div className="transport">
-      <button onClick={onToggle}>{playing ? 'Stop' : 'Play'}</button>
-      <button
-        className="transport__settings"
-        onClick={onToggleSettings}
-        aria-expanded={showSettings}
-      >
-        {showSettings ? '設定を閉じる ▲' : '設定を開く ▼'}
+      <button className={'transport__play' + (playing ? ' is-on' : '')} onClick={onToggle} aria-pressed={playing}>
+        {playing ? 'Stop' : 'Play'}
       </button>
+      <div className="transport__pos" aria-label="再生位置">
+        <span>
+          bar <b>{beatPos ? beatPos.bar + 1 : '–'}</b>/8
+        </span>
+        <span className="transport__beats" aria-label={beat == null ? '' : `${beat + 1}拍目`}>
+          {Array.from({ length: BEATS_PER_MEASURE }, (_, i) => (
+            <i key={i} className={beat === i ? 'on' : ''} />
+          ))}
+        </span>
+        <span>
+          <b>{bpm}</b> bpm
+        </span>
+      </div>
+      {children}
     </div>
   )
 }

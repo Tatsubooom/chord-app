@@ -51,24 +51,25 @@ test('buildChord names common C-major chords correctly (triad, temp=0)', () => {
   assert.equal(triad('C', 'major', 0).name, 'C')
   assert.equal(triad('C', 'major', 1).name, 'Dm')
   assert.equal(triad('C', 'major', 4).name, 'G')
-  assert.equal(triad('C', 'major', 6).name, 'B°')
+  assert.equal(triad('C', 'major', 6).name, 'Bdim')
 })
 
-test('buildChord emits roman numerals with correct case/suffix (current behavior)', () => {
+test('buildChord emits J-POP style roman numerals (uppercase + symbol)', () => {
   assert.equal(triad('C', 'major', 0).roman, 'I')
-  // 現状仕様: 小文字ローマ数字に加えて 'm' も付く（例: iim）
-  assert.equal(triad('C', 'major', 1).roman, 'iim')
-  assert.equal(triad('C', 'major', 6).roman, 'vii°')
+  assert.equal(triad('C', 'major', 1).roman, 'IIm')
+  assert.equal(triad('C', 'major', 6).roman, 'VIIdim')
+  // マイナーキーの III はトニック基準で ♭III
+  assert.equal(triad('A', 'minor', 2).roman, '♭III')
 })
 
-test('buildChord (triad, temp=0) has no added bass and stays in the voice-leading window', () => {
+test('buildChord (triad, temp=0) puts the root in the bass under a 3-voice upper structure', () => {
   const chord = triad('C', 'major', 0)
-  for (const m of chord.midis) {
-    assert.ok(m >= 55 && m <= 66, `tone ${m} sits in G3..F#4`)
-  }
-  // 音はユニーク & 昇順、トライアドの3音のみ（低音のルート重複なし）
-  assert.deepEqual(chord.midis, [...chord.midis].sort((a, b) => a - b))
-  assert.equal(chord.midis.length, 3)
+  const { bass, upper } = chord.voicing
+  assert.equal(bass % 12, 0, 'bass is the root C')
+  assert.ok(bass >= 36 && bass <= 50)
+  assert.deepEqual(upper.map(m => m % 12).sort((a, b) => a - b), [0, 4, 7])
+  assert.ok(upper.every(m => m > bass))
+  assert.deepEqual(chord.midis, [bass, ...upper])
 })
 
 test('degree wraps around the scale length', () => {
@@ -94,10 +95,10 @@ test('enableSubs can turn a diatonic minor chord into a non-diatonic secondary d
   let sawSecondaryDominant = false
   for (let i = 0; i < 300; i++) {
     const c = buildChord('C', 'major', 1, 1, true)
-    // 代理成立時はルート D のメジャー系（'Dm' で始まらない 'D...'）になる
-    if (c.name.startsWith('D') && !c.name.startsWith('Dm')) {
+    // 代理成立時はルート D のメジャー3度＋♭7（D7 系）になる
+    if (c.tag === 'セカンダリー') {
       sawSecondaryDominant = true
-      assert.ok(c.name.includes('7'), `secondary dominant should carry a 7th: ${c.name}`)
+      assert.ok(c.ivs.includes(4) && c.ivs.includes(10), `secondary dominant should be dominant 7th: ${c.name}`)
     }
   }
   assert.ok(sawSecondaryDominant, 'ii should sometimes become a major-rooted secondary dominant')
