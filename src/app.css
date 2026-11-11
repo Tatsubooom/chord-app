@@ -79,17 +79,6 @@
   transform-origin: 150px 150px;
   transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.cof__ghost line {
-  stroke: var(--text);
-  stroke-width: 0.6;
-}
-.cof__trail-line {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 0.8;
-  stroke-opacity: 0.45;
-  stroke-dasharray: 2 2;
-}
 .cof__voice {
   fill: none;
   stroke: var(--accent);
@@ -115,9 +104,6 @@
   stroke: var(--text-h);
   stroke-width: 1.2;
   stroke-dasharray: 2 2.5;
-}
-.cof__trail {
-  fill: var(--accent);
 }
 .cof__now {
   transform-origin: 150px 150px;
@@ -895,24 +881,14 @@ button {
 .odds__bar i.on {
   background: var(--meter-on);
 }
-/* 上の方（振り切れゾーン）は紫に光る */
-.odds__bar i.on:nth-child(n + 8) {
-  background: var(--accent);
-  box-shadow: 0 0 4px var(--accent-border);
-}
-/* ピークホールド */
-.odds__bar i.peak {
-  background: var(--accent);
-  opacity: 0.75;
-}
 /* 今のコードで実際に起きた仕掛け */
-.odds__row.is-hit .odds__name {
-  color: var(--accent);
-  text-shadow: 0 0 6px rgba(192, 132, 252, 0.6);
+.odds__row.is-hit {
+  background: rgba(243, 244, 246, 0.05);
 }
-.odds__row.is-hit .odds__bar i.on {
-  background: var(--accent);
-  box-shadow: 0 0 4px var(--accent-border);
+.odds__row.is-hit .odds__name,
+.odds__row.is-hit .odds__pct {
+  color: var(--text-h);
+  font-weight: 700;
 }
 .odds__pct,
 .odds__unit {

@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { colorChances, gestureChances, splitChance } from '../engines/planner'
 
 const SEGMENTS = 10
-const TICK_MS = 90 // メーターを揺らす間隔
-const DECAY = 0.8 // 1 tick ごとの落ち方（VU メーター風に、上がるのは速く落ちるのはゆっくり）
-const PEAK_FALL = 0.035 // ピークホールドの落ちる速さ
+const TICK_MS = 150 // 表示を更新する間隔
+const EASE = 0.22 // 1 tick で目標値に近づく割合（なめらかに追従）
+const NOISE = 0.025 // 目標値に乗せる小さなゆらぎ（目標値に対する割合）
 
 // 仕掛けのタグ（プランナーが付けるもの）→ この一覧のどの行か
 function rowOfTag(tag) {
@@ -50,11 +50,10 @@ function contextBoost(key, chord) {
   }
 }
 
-// 仕掛け / 色 / 分割の起きやすさ。今のコードの状態に合わせて、メーターがわさわさ動く。
-//   ・今のコードで実際に起きた仕掛けの行は振り切れて紫に光る
-//   ・今のコードの機能（D / T / SD）や 7th / 9th などから、関係する行が持ち上がる
-//   ・その上で VU メーターのように揺れ、ピークを一瞬ホールドする（見た目重視で線形ではない）
-//   右の数値は、今の設定での目安の確率（変わらない）
+// 仕掛け / 色 / 分割の起きやすさ。再生中は今のコードの状態に合わせた「今この瞬間の目安」を表示する。
+//   ・設定から決まる基本の確率に、今のコードの機能（D / T / SD）や 7th / 9th などに応じた補正を掛ける
+//   ・今のコードで実際に起きている仕掛けの行は 100 になり、明るく強調される
+//   ・値へはなめらかに近づき、小さなゆらぎだけを乗せる。停止中は設定どおりの基本の確率
 export default function DecorationInfo({ scale, temperature, spice, enableMultiChord, enableSubs, chord, playing }) {
   const color = colorChances(temperature)
   const rows = [
@@ -65,7 +64,7 @@ export default function DecorationInfo({ scale, temperature, spice, enableMultiC
   ]
   const hitRow = rowOfTag(chord?.gesture)
 
-  const [meters, setMeters] = useState(null) // { level: number[], peak: number[] }
+  const [levels, setLevels] = useState(null) // 再生中の表示値（0〜1）
   const live = useRef({ rows, chord, hitRow })
   useEffect(() => {
     live.current = { rows, chord, hitRow }
@@ -75,21 +74,21 @@ export default function DecorationInfo({ scale, temperature, spice, enableMultiC
     if (!playing) return undefined
     const id = setInterval(() => {
       const { rows: rs, chord: c, hitRow: hit } = live.current
-      setMeters(prev => {
-        const level = rs.map((r, i) => {
-          if (r.prob <= 0) return 0
-          const base = 0.12 + Math.min(1, r.prob) * 0.55
-          const target = r.key === hit ? 1 : Math.min(0.95, base * 0.75 + contextBoost(r.key, c))
-          const kick = target * (0.5 + Math.random() * 0.65) // わさわさ揺らす
-          return Math.min(1, Math.max(kick, (prev?.level[i] ?? 0) * DECAY))
-        })
-        const peak = level.map((l, i) => Math.max(l, (prev?.peak[i] ?? 0) - PEAK_FALL))
-        return { level, peak }
-      })
+      setLevels(prev =>
+        rs.map((r, i) => {
+          const p = Math.min(1, r.prob)
+          if (p <= 0) return 0
+          // 今のコードに関係する仕掛けほど起きやすい（補正は最大で約2倍）
+          const target = r.key === hit ? 1 : Math.min(0.97, p * (1 + contextBoost(r.key, c) * 2))
+          const from = prev?.[i] ?? p
+          const wobble = target * NOISE * (Math.random() * 2 - 1)
+          return Math.min(1, Math.max(0, from + (target - from) * EASE + wobble))
+        }),
+      )
     }, TICK_MS)
     return () => {
       clearInterval(id)
-      setMeters(null)
+      setLevels(null)
     }
   }, [playing])
 
@@ -103,20 +102,19 @@ export default function DecorationInfo({ scale, temperature, spice, enableMultiC
       </div>
       <ul className="odds__list">
         {rows.map((r, i) => {
-          // 停止中は目安の確率をそのまま静かに表示
-          const level = meters ? meters.level[i] : Math.min(1, r.prob)
+          // 停止中は設定どおりの基本の確率をそのまま表示
+          const level = levels ? levels[i] : Math.min(1, r.prob)
           const lit = Math.round(level * SEGMENTS)
-          const peakSeg = meters ? Math.round(meters.peak[i] * SEGMENTS) - 1 : -1
           const hit = playing && r.key === hitRow
           return (
             <li key={r.key} className={'odds__row' + (r.prob <= 0 ? ' is-off' : '') + (hit ? ' is-hit' : '')}>
               <span className="odds__name">{r.key}</span>
               <span className="odds__bar" aria-hidden="true">
                 {Array.from({ length: SEGMENTS }, (_, s) => (
-                  <i key={s} className={(s < lit ? 'on' : '') + (s === peakSeg && s >= lit ? ' peak' : '')} />
+                  <i key={s} className={s < lit ? 'on' : ''} />
                 ))}
               </span>
-              <span className="odds__pct">{(Math.min(1, r.prob) * 100).toFixed(0)}</span>
+              <span className="odds__pct">{Math.round(level * 100)}</span>
               <span className="odds__unit">/{r.note}</span>
             </li>
           )

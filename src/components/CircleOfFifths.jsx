@@ -9,9 +9,7 @@ import { KEYS } from '../constants'
 //     （ノードの外側半分・ノード同士の隙間・外側のキーの弧の周りはピアノロールが透けて見える）
 //   ・前のコードから鳴り続けている音（共通音）のノードには外側のリング
 //   ・前のコードのルート → 今のルートへの曲線の矢印。つながりが強いほど太く濃い
-//   ・内側の小さな点は、直前数コードのルートの足跡（細い線で軌跡として繋ぐ）
 //   ・前のコードの各声部 → 今の音へのボイスリーディング（紫の細い線。ベースは太め）
-//   ・直前数コードの「音同士の線」を残像として薄く重ねる
 //   ・外側の紫の弧は、今のキーのダイアトニック範囲（五度圏で隣り合う7音）
 //   五度圏の並び（C が真上）は固定。キー / スケールを変えると、紫のキーの弧だけが
 //   新しいダイアトニック範囲まで円に沿って滑らかに回り込む（弧の位置が同じならひと回りする）。
@@ -20,9 +18,6 @@ const C = SIZE / 2
 const R_NODE = 112 // ノードを並べる半径
 const NODE_R = 19
 const R_KEY = 145 // キーの弧（ノードの外側に、間を空けて沿わせる）
-const R_TRAIL = 70 // ルートの足跡の半径
-const TRAIL = 4 // 足跡として残すコード数
-const GHOSTS = 3 // 残像として線を残すコード数
 
 const rad = deg => ((deg - 90) * Math.PI) / 180
 const point = (idx, r) => [C + r * Math.cos(rad(idx * 30)), C + r * Math.sin(rad(idx * 30))]
@@ -49,14 +44,6 @@ function dodecagonPath(r) {
       .map(([x, y], k) => `${k ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`)
       .join(' ') + ' Z'
   )
-}
-
-// 音どうしを全部結ぶ線分
-function allLinks(pcs, r) {
-  const pts = pcs.map(pc => point(circleIndex(pc), r))
-  const out = []
-  for (let a = 0; a < pts.length; a++) for (let b = a + 1; b < pts.length; b++) out.push([pts[a], pts[b]])
-  return out
 }
 
 // ノード間を、中心側へ少したわませて結ぶ曲線
@@ -147,7 +134,6 @@ export default function CircleOfFifths({ history, keyName, scale }) {
   for (let a = 0; a < nowPts.length; a++) for (let b = a + 1; b < nowPts.length; b++) links.push([nowPts[a], nowPts[b]])
 
   const motion = conn ? motionPath(circleIndex(rootOf(prev)), circleIndex(rootOf(now))) : null
-  const trail = history.slice(1, TRAIL + 1).map(c => circleIndex(rootOf(c)))
 
   const arcSpin = { transform: `rotate(${angle}deg)` }
 
@@ -178,29 +164,6 @@ export default function CircleOfFifths({ history, keyName, scale }) {
           {/* 台座: 隣り合うノードの中心を結んだ12角形 */}
           <path d={dodecagonPath(R_NODE)} className="cof__plate" />
           <circle cx={C} cy={C} r={R_NODE} className="cof__orbit" />
-
-          {/* 残像: 直前のコードの「音同士の線」（古いほど薄い） */}
-          {history.slice(1, GHOSTS + 1).map((c, k) => (
-            <g key={c.id} className="cof__ghost" style={{ opacity: 0.32 - k * 0.09 }}>
-              {allLinks(pcsOf(c), R_NODE).map(([[x1, y1], [x2, y2]], i) => (
-                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />
-              ))}
-            </g>
-          ))}
-
-          {/* ルートの軌跡（足跡の点を細い線で繋ぐ） */}
-          {trail.length > 1 && (
-            <polyline
-              points={[circleIndex(rootOf(now)), ...trail].map(i => point(i, R_TRAIL).map(n => n.toFixed(1)).join(',')).join(' ')}
-              className="cof__trail-line"
-            />
-          )}
-
-          {/* ルートの足跡（古いほど小さく薄い） */}
-          {trail.map((idx, k) => {
-            const [x, y] = point(idx, R_TRAIL)
-            return <circle key={k} cx={x} cy={y} r={3.4 - k * 0.6} className="cof__trail" style={{ opacity: 0.75 - k * 0.15 }} />
-          })}
 
           {/* 今のコード: 鳴っている音同士を細い線で結ぶ */}
           <g className="cof__now" key={now?.id ?? 'none'}>
