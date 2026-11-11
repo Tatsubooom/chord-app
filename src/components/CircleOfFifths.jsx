@@ -5,7 +5,8 @@ import { KEYS } from '../constants'
 
 // 五度圏の上でコードを記号的に表示する。
 //   ・今鳴っている音のノードを塗り、ノードの丸同士を細い線で直接結ぶ（ベース音は紫）
-//   ・ノードの輪の内側には、ほんのり透ける台座。輪と外側のキーの弧の間はピアノロールが透けて見える
+//   ・隣り合うノードの中心を結んだ12角形の内側だけに、ほんのり透ける台座を敷く
+//     （ノードの外側半分・ノード同士の隙間・外側のキーの弧の周りはピアノロールが透けて見える）
 //   ・前のコードから鳴り続けている音（共通音）のノードには外側のリング
 //   ・前のコードのルート → 今のルートへの曲線の矢印。つながりが強いほど太く濃い
 //   ・内側の小さな点は、直前数コードのルートの足跡
@@ -38,6 +39,15 @@ function polygonPath(pcs, r) {
     .map(i => point(i, r))
   if (pts.length < 2) return ''
   return pts.map(([x, y], k) => `${k ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') + (pts.length > 2 ? ' Z' : '')
+}
+
+// 隣り合うノードの中心を結んだ12角形
+function dodecagonPath(r) {
+  return (
+    Array.from({ length: 12 }, (_, i) => point(i, r))
+      .map(([x, y], k) => `${k ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`)
+      .join(' ') + ' Z'
+  )
 }
 
 function arcPath(fromIdx, toIdx, r) {
@@ -123,9 +133,9 @@ export default function CircleOfFifths({ history, keyName, scale }) {
         </defs>
 
 
-        <circle cx={C} cy={C} r={R_NODE + NODE_R + 3} className="cof__plate" />
-
         <g className="cof__drum" style={spin}>
+          {/* 台座: 隣り合うノードの中心を結んだ12角形（回転中もノードと一緒に動くようドラムの中に置く） */}
+          <path d={dodecagonPath(R_NODE)} className="cof__plate" />
           <circle cx={C} cy={C} r={R_NODE} className="cof__orbit" />
           <path d={arcPath(majorTonicIdx - 1.5, majorTonicIdx + 5.5, R_KEY)} className="cof__key" />
 

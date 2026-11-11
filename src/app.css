@@ -125,7 +125,7 @@
   to { opacity: 1; transform: scale(1); }
 }
 .cof__plate {
-  /* ノードの輪の内側だけに敷く、ほんのり透ける台座 */
+  /* 隣り合うノードを結んだ12角形の内側だけに敷く、ほんのり透ける台座 */
   fill: var(--bg);
   fill-opacity: 0.82;
 }
