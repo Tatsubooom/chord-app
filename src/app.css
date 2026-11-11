@@ -80,9 +80,11 @@
   transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .cof__motion {
+  /* キーの弧と同じ、ほんのり光る紫（矢じりにも同じ光が掛かる） */
   fill: none;
   stroke: var(--accent);
   stroke-linecap: round;
+  filter: drop-shadow(0 0 2.5px var(--accent-border)) drop-shadow(0 0 5px rgba(170, 59, 255, 0.45));
 }
 .cof__arrowhead {
   fill: var(--accent);
@@ -95,23 +97,6 @@
 }
 .cof__trail {
   fill: var(--accent);
-}
-.cof__steps {
-  font-family: var(--mono);
-  font-size: 22px;
-  font-weight: 700;
-  fill: var(--text-h);
-}
-.cof__pip {
-  fill: var(--meter-off);
-}
-.cof__pip.is-on {
-  fill: var(--accent);
-}
-.cof__common {
-  font-family: var(--mono);
-  font-size: 16px;
-  fill: var(--text);
 }
 .cof__now {
   transform-origin: 150px 150px;

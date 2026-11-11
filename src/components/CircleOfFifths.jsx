@@ -10,7 +10,6 @@ import { KEYS } from '../constants'
 //   ・前のコードから鳴り続けている音（共通音）のノードには外側のリング
 //   ・前のコードのルート → 今のルートへの曲線の矢印。つながりが強いほど太く濃い
 //   ・内側の小さな点は、直前数コードのルートの足跡
-//   ・中央: 五度圏上のルートの動き（←1 = 5度下行）、つながりの強さ（5段）、共通音の数
 //   ・外側の紫の弧は、今のキーのダイアトニック範囲（五度圏で隣り合う7音）
 //   五度圏の並び（C が真上）は固定。キー / スケールを変えると、紫のキーの弧だけが
 //   新しいダイアトニック範囲まで円に沿って滑らかに回り込む（弧の位置が同じならひと回りする）。
@@ -21,7 +20,6 @@ const NODE_R = 19
 const R_KEY = 145 // キーの弧（ノードの外側に、間を空けて沿わせる）
 const R_TRAIL = 70 // ルートの足跡の半径
 const TRAIL = 4 // 足跡として残すコード数
-const PIPS = 5
 
 const rad = deg => ((deg - 90) * Math.PI) / 180
 const point = (idx, r) => [C + r * Math.cos(rad(idx * 30)), C + r * Math.sin(rad(idx * 30))]
@@ -116,8 +114,6 @@ export default function CircleOfFifths({ history, keyName, scale }) {
 
   const motion = conn ? motionPath(circleIndex(rootOf(prev)), circleIndex(rootOf(now))) : null
   const trail = history.slice(1, TRAIL + 1).map(c => circleIndex(rootOf(c)))
-  const lit = conn ? Math.round(conn.strength * PIPS) : 0
-  const stepsLabel = !conn ? '—' : conn.steps === 0 ? '±0' : conn.steps < 0 ? `←${-conn.steps}` : `→${conn.steps}`
 
   const arcSpin = { transform: `rotate(${angle}deg)` }
 
@@ -125,8 +121,18 @@ export default function CircleOfFifths({ history, keyName, scale }) {
     <div className="cof" aria-hidden="true">
       <svg viewBox={`0 0 ${SIZE} ${SIZE}`}>
         <defs>
-          <marker id="cof-arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" className="cof__arrowhead" />
+          {/* 矢じり: 細長く、根元に切れ込みのあるシャープなダート形。線の太さに関わらず一定の大きさ */}
+          <marker
+            id="cof-arrow"
+            viewBox="0 0 14 8"
+            refX="11"
+            refY="4"
+            markerUnits="userSpaceOnUse"
+            markerWidth="13"
+            markerHeight="7.5"
+            orient="auto-start-reverse"
+          >
+            <path d="M0 0.4 L14 4 L0 7.6 L4 4 Z" className="cof__arrowhead" />
           </marker>
         </defs>
 
@@ -185,18 +191,6 @@ export default function CircleOfFifths({ history, keyName, scale }) {
           })}
         </g>
 
-        {/* 中央の読み取り表示（回転しない） */}
-        <g className="cof__readout">
-          <text x={C} y={C - 6} textAnchor="middle" className="cof__steps">
-            {stepsLabel}
-          </text>
-          {Array.from({ length: PIPS }, (_, i) => (
-            <rect key={i} x={C - 23 + i * 9.5} y={C + 6} width="7" height="7" className={'cof__pip' + (i < lit ? ' is-on' : '')} />
-          ))}
-          <text x={C} y={C + 32} textAnchor="middle" className="cof__common">
-            {conn ? `◎ ${conn.common.length}` : ''}
-          </text>
-        </g>
       </svg>
     </div>
   )
