@@ -151,58 +151,95 @@ export function Lcd({ children }) {
 }
 
 // 縦向きのスライドスイッチ。options の段数でカチッと止まり、下の LCD に今の設定を表示する（目盛りの文字は出さない）。
-//   つまみのドラッグ / 溝のクリック / 上下キーで切り替える。上が先頭の選択肢。
+//   スイッチ全体が操作範囲。つかんだ位置からの相対ドラッグで段を移動する（つまみを少し外してつかんでも動く）。
+//   ドラッグせずにクリックした場合だけ、その高さの段へ移動する。ホイール / 上下キーでも切り替えられる。上が先頭の選択肢。
+const DRAG_THRESHOLD_PX = 3
+
 export function SlideSwitch({ label, options, value, onChange, hint }) {
+  const hitRef = useRef(null)
   const trackRef = useRef(null)
-  const dragging = useRef(false)
+  const drag = useRef(null) // { y, startIdx, moved }
   const n = options.length
   const idx = Math.max(0, options.findIndex(o => o.value === value))
   const pos = i => `${(i / (n - 1)) * 100}%`
+  const stateRef = useRef({ idx, n, options, onChange })
+  useEffect(() => {
+    stateRef.current = { idx, n, options, onChange }
+  })
 
-  const pickAt = clientY => {
+  const setIdx = i => {
+    const { idx: cur, n: len, options: opts, onChange: change } = stateRef.current
+    const next = Math.min(len - 1, Math.max(0, i))
+    if (next !== cur) change(opts[next].value)
+  }
+  // 段と段の間隔（px）。溝の高さから求める
+  const stepPx = () => trackRef.current.getBoundingClientRect().height / (n - 1)
+  const idxAt = clientY => {
     const r = trackRef.current.getBoundingClientRect()
-    const f = (clientY - r.top) / r.height
-    const i = Math.min(n - 1, Math.max(0, Math.round(f * (n - 1))))
-    if (i !== idx) onChange(options[i].value)
+    return Math.round(((clientY - r.top) / r.height) * (n - 1))
+  }
+
+  // ホイールはページのスクロールを止めたいので passive: false で直接登録する
+  useEffect(() => {
+    const el = hitRef.current
+    const onWheel = e => {
+      e.preventDefault()
+      setIdx(stateRef.current.idx + (e.deltaY > 0 ? 1 : -1))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
+  const onPointerDown = e => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    drag.current = { y: e.clientY, startIdx: idx, moved: false }
+  }
+  const onPointerMove = e => {
+    const d = drag.current
+    if (!d) return
+    const dy = e.clientY - d.y
+    if (!d.moved && Math.abs(dy) < DRAG_THRESHOLD_PX) return
+    d.moved = true
+    setIdx(d.startIdx + Math.round(dy / stepPx()))
+  }
+  const onPointerUp = e => {
+    const d = drag.current
+    drag.current = null
+    if (d && !d.moved) setIdx(idxAt(e.clientY)) // クリック: その高さの段へ
   }
   const onKeyDown = e => {
     const map = { ArrowUp: idx - 1, ArrowLeft: idx - 1, ArrowDown: idx + 1, ArrowRight: idx + 1, Home: 0, End: n - 1 }
     if (e.key in map) {
       e.preventDefault()
-      const i = Math.min(n - 1, Math.max(0, map[e.key]))
-      if (i !== idx) onChange(options[i].value)
+      setIdx(map[e.key])
     }
   }
 
   return (
     <div className="knob knob--slide" title={hint}>
-      <div className="slide">
-        <div
-          ref={trackRef}
-          className="slide__track"
-          role="slider"
-          tabIndex={0}
-          aria-label={label}
-          aria-orientation="vertical"
-          aria-valuemin={0}
-          aria-valuemax={n - 1}
-          aria-valuenow={idx}
-          aria-valuetext={options[idx].lcd}
-          onPointerDown={e => {
-            e.currentTarget.setPointerCapture(e.pointerId)
-            dragging.current = true
-            pickAt(e.clientY)
-          }}
-          onPointerMove={e => dragging.current && pickAt(e.clientY)}
-          onPointerUp={() => (dragging.current = false)}
-          onPointerCancel={() => (dragging.current = false)}
-          onKeyDown={onKeyDown}
-        >
-          <span className="slide__slot" aria-hidden="true" />
+      <div
+        ref={hitRef}
+        className="slide"
+        role="slider"
+        tabIndex={0}
+        aria-label={label}
+        aria-orientation="vertical"
+        aria-valuemin={0}
+        aria-valuemax={n - 1}
+        aria-valuenow={idx}
+        aria-valuetext={options[idx].lcd}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => (drag.current = null)}
+        onKeyDown={onKeyDown}
+      >
+        <div ref={trackRef} className="slide__track" aria-hidden="true">
+          <span className="slide__slot" />
           {options.map((o, i) => (
-            <span key={o.value} className="slide__notch" style={{ top: pos(i) }} aria-hidden="true" />
+            <span key={o.value} className="slide__notch" style={{ top: pos(i) }} />
           ))}
-          <span className="slide__thumb" style={{ top: pos(idx) }} aria-hidden="true" />
+          <span className="slide__thumb" style={{ top: pos(idx) }} />
         </div>
       </div>
       <Lcd>{options[idx].lcd}</Lcd>

@@ -665,20 +665,22 @@ button {
   width: 96px;
 }
 .slide {
+  /* スイッチ全体（つまみの周りも含む）を操作範囲にする */
   position: relative;
   height: 76px;
   width: 76px;
   display: flex;
   justify-content: center;
+  cursor: ns-resize;
+  touch-action: none; /* スマホでもドラッグで動かせるように */
+  user-select: none;
 }
 .slide__track {
   position: relative;
   width: 26px;
-  height: 64px;
-  margin: 6px 0;
-  cursor: ns-resize;
-  touch-action: none;
-  outline-offset: 6px;
+  height: 60px;
+  margin: 8px 0;
+  pointer-events: none; /* 判定は外側の .slide で受ける */
 }
 .slide__slot {
   position: absolute;
@@ -709,8 +711,8 @@ button {
 .slide__thumb {
   position: absolute;
   left: 50%;
-  width: 26px;
-  height: 14px;
+  width: 32px;
+  height: 16px;
   transform: translate(-50%, -50%);
   background: linear-gradient(#3a3d49, #23252e);
   border: 1px solid #4a4d5a;
@@ -730,8 +732,9 @@ button {
   background: var(--accent);
   box-shadow: 0 0 4px var(--accent);
 }
-.slide__track:focus-visible {
+.slide:focus-visible {
   outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* 押すと点灯するパッド */
