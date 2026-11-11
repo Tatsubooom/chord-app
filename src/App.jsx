@@ -7,6 +7,7 @@ import Piano from './components/Piano'
 import TransportControls from './components/TransportControls'
 import WeightPanel from './components/WeightPanel'
 import DecorationInfo from './components/DecorationInfo'
+import CircleOfFifths from './components/CircleOfFifths'
 
 export default function App() {
   const [key, setKey] = useState('C')
@@ -36,10 +37,13 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="stage">
-        <Piano activeMidis={currentChord?.midis || []} bassMidi={currentChord?.voicing?.bass ?? null} />
-        <ChordDisplay chord={currentChord} />
-        <ChordHistory history={history} />
+      <div className="stage-row">
+        <div className="stage">
+          <Piano activeMidis={currentChord?.midis || []} bassMidi={currentChord?.voicing?.bass ?? null} />
+          <ChordDisplay chord={currentChord} />
+          <ChordHistory history={history} />
+        </div>
+        <CircleOfFifths history={history} keyName={key} scale={scale} />
       </div>
 
       <TransportControls playing={playing} onToggle={toggle} beatPos={beatPos} bpm={bpm} />
