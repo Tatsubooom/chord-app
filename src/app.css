@@ -30,7 +30,7 @@
   }
 }
 
-/* 12音の円（補助計器）: ピアノロールの右端に縦中央で重ねる */
+/* 五度圏（補助計器）: ピアノロールの右端に縦中央で重ねる */
 .stage > .cof {
   position: absolute;
   z-index: 2;
@@ -78,19 +78,6 @@
 .cof__key {
   transform-origin: 150px 150px;
   transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.cof__voice {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 0.9;
-  stroke-opacity: 0.6;
-}
-.cof__voice.is-bass {
-  stroke-width: 1.8;
-  stroke-opacity: 0.8;
-}
-.cof__key .is-tonic {
-  stroke-width: 4.5;
 }
 .cof__motion {
   /* キーの弧と同じ、ほんのり光る紫（矢じりにも同じ光が掛かる） */
