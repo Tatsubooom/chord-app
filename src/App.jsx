@@ -85,6 +85,8 @@ export default function App() {
           spice={spice}
           enableMultiChord={enableMultiChord}
           enableSubs={enableSubs}
+          chord={currentChord}
+          playing={playing}
         />
       </div>
     </div>

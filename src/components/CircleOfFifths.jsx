@@ -9,7 +9,9 @@ import { KEYS } from '../constants'
 //     （ノードの外側半分・ノード同士の隙間・外側のキーの弧の周りはピアノロールが透けて見える）
 //   ・前のコードから鳴り続けている音（共通音）のノードには外側のリング
 //   ・前のコードのルート → 今のルートへの曲線の矢印。つながりが強いほど太く濃い
-//   ・内側の小さな点は、直前数コードのルートの足跡
+//   ・内側の小さな点は、直前数コードのルートの足跡（細い線で軌跡として繋ぐ）
+//   ・前のコードの各声部 → 今の音へのボイスリーディング（紫の細い線。ベースは太め）
+//   ・直前数コードの「音同士の線」を残像として薄く重ねる
 //   ・外側の紫の弧は、今のキーのダイアトニック範囲（五度圏で隣り合う7音）
 //   五度圏の並び（C が真上）は固定。キー / スケールを変えると、紫のキーの弧だけが
 //   新しいダイアトニック範囲まで円に沿って滑らかに回り込む（弧の位置が同じならひと回りする）。
@@ -20,6 +22,7 @@ const NODE_R = 19
 const R_KEY = 145 // キーの弧（ノードの外側に、間を空けて沿わせる）
 const R_TRAIL = 70 // ルートの足跡の半径
 const TRAIL = 4 // 足跡として残すコード数
+const GHOSTS = 3 // 残像として線を残すコード数
 
 const rad = deg => ((deg - 90) * Math.PI) / 180
 const point = (idx, r) => [C + r * Math.cos(rad(idx * 30)), C + r * Math.sin(rad(idx * 30))]
@@ -46,6 +49,37 @@ function dodecagonPath(r) {
       .map(([x, y], k) => `${k ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`)
       .join(' ') + ' Z'
   )
+}
+
+// 音どうしを全部結ぶ線分
+function allLinks(pcs, r) {
+  const pts = pcs.map(pc => point(circleIndex(pc), r))
+  const out = []
+  for (let a = 0; a < pts.length; a++) for (let b = a + 1; b < pts.length; b++) out.push([pts[a], pts[b]])
+  return out
+}
+
+// ノード間を、中心側へ少したわませて結ぶ曲線
+function bowPath(fromIdx, toIdx, k = 0.22) {
+  const [x1, y1] = point(fromIdx, R_NODE)
+  const [x2, y2] = point(toIdx, R_NODE)
+  const mx = (x1 + x2) / 2
+  const my = (y1 + y2) / 2
+  return `M ${x1.toFixed(1)} ${y1.toFixed(1)} Q ${(mx + (C - mx) * k).toFixed(1)} ${(my + (C - my) * k).toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`
+}
+
+// 前のボイシングの各声部が、今のどの音へ動いたか（声部数が同じなら順番どおり、違えば最寄りの音へ）
+function voiceMoves(prevV, nowV) {
+  if (!prevV || !nowV) return []
+  const a = [...prevV.upper].sort((x, y) => x - y)
+  const b = [...nowV.upper].sort((x, y) => x - y)
+  const pairs =
+    a.length === b.length
+      ? a.map((m, i) => [m, b[i]])
+      : a.map(m => [m, b.reduce((best, n) => (Math.abs(n - m) < Math.abs(best - m) ? n : best), b[0])])
+  const moves = pairs.filter(([x, y]) => x % 12 !== y % 12).map(([x, y]) => ({ from: x % 12, to: y % 12, bass: false }))
+  if (prevV.bass % 12 !== nowV.bass % 12) moves.push({ from: prevV.bass % 12, to: nowV.bass % 12, bass: true })
+  return moves
 }
 
 function arcPath(fromIdx, toIdx, r) {
@@ -145,6 +179,23 @@ export default function CircleOfFifths({ history, keyName, scale }) {
           <path d={dodecagonPath(R_NODE)} className="cof__plate" />
           <circle cx={C} cy={C} r={R_NODE} className="cof__orbit" />
 
+          {/* 残像: 直前のコードの「音同士の線」（古いほど薄い） */}
+          {history.slice(1, GHOSTS + 1).map((c, k) => (
+            <g key={c.id} className="cof__ghost" style={{ opacity: 0.32 - k * 0.09 }}>
+              {allLinks(pcsOf(c), R_NODE).map(([[x1, y1], [x2, y2]], i) => (
+                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />
+              ))}
+            </g>
+          ))}
+
+          {/* ルートの軌跡（足跡の点を細い線で繋ぐ） */}
+          {trail.length > 1 && (
+            <polyline
+              points={[circleIndex(rootOf(now)), ...trail].map(i => point(i, R_TRAIL).map(n => n.toFixed(1)).join(',')).join(' ')}
+              className="cof__trail-line"
+            />
+          )}
+
           {/* ルートの足跡（古いほど小さく薄い） */}
           {trail.map((idx, k) => {
             const [x, y] = point(idx, R_TRAIL)
@@ -156,6 +207,14 @@ export default function CircleOfFifths({ history, keyName, scale }) {
             <path d={polygonPath(nowPcs, R_NODE)} className="cof__poly" />
             {links.map(([[x1, y1], [x2, y2]], i) => (
               <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className="cof__link" />
+            ))}
+            {/* ボイスリーディング: 前の各声部 → 今の音 */}
+            {voiceMoves(prev?.voicing, now?.voicing).map((m, i) => (
+              <path
+                key={i}
+                d={bowPath(circleIndex(m.from), circleIndex(m.to))}
+                className={'cof__voice' + (m.bass ? ' is-bass' : '')}
+              />
             ))}
             {/* 前のルート → 今のルート。つながりが強いほど太く濃い */}
             {motion && (
