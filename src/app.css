@@ -826,11 +826,11 @@ button {
   color: var(--text);
 }
 .odds__list {
+  /* 2段組。畳んだ行の分だけ自然に詰まるよう、グリッドではなく段組で流す */
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  columns: 2;
   column-gap: 28px;
 }
 @media (max-width: 640px) {
@@ -844,9 +844,18 @@ button {
   align-items: center;
   gap: 8px;
   height: 27px;
+  overflow: hidden;
+  break-inside: avoid;
   border-bottom: 1px solid var(--border);
   font-size: 12px;
   color: var(--text-h);
+  transition: height 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.2s ease, border-color 0.3s ease;
+}
+/* 今の設定では起こりえない行: 高さ 0 まで畳む */
+.odds__row.is-closed {
+  height: 0;
+  opacity: 0;
+  border-bottom-color: transparent;
 }
 @media (max-width: 640px) {
   .odds__row {
@@ -855,9 +864,6 @@ button {
   .odds__unit {
     display: none;
   }
-}
-.odds__row.is-off {
-  color: var(--text-dim);
 }
 .odds__name {
   white-space: nowrap;
@@ -910,6 +916,7 @@ button {
   .piano__white,
   .piano__black,
   .pad,
+  .odds__row,
   .slide__thumb,
   .hreveal,
   .seg__btn {

@@ -14,6 +14,8 @@ import { calcWeights, weightedRandom, pickPhraseTemplate } from './weightEngine.
 import { ROMAN, mod12 } from './theory.js'
 
 export const SECTION_BARS = 8
+// 前のセクションの骨格をそのまま繰り返す（A → A'）確率。2回続けては繰り返さない
+export const REPEAT_CHANCE = 0.3
 const BEATS = 4
 
 const FUNCTION = {
@@ -300,7 +302,7 @@ export function planSection(settings, ctx = {}) {
   const t1 = ctx.nextTemplate ?? pickPhraseTemplate(mode, scaleLength, avoid)
   let targets
   let templates
-  const repeat = ctx.lastTargets && !ctx.wasRepeat && Math.random() < 0.3
+  const repeat = ctx.lastTargets && !ctx.wasRepeat && Math.random() < REPEAT_CHANCE
   if (repeat) {
     targets = [...ctx.lastTargets] // A → A'（同じ骨格を仕掛け違いで繰り返す）
     templates = ['(くり返し)']
