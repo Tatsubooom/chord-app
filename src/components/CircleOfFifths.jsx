@@ -8,7 +8,7 @@ import { KEYS } from '../constants'
 const SIZE = 300
 const C = SIZE / 2
 const R_NODE = 122 // ノードを並べる半径
-const NODE_R = 15
+const NODE_R = 17
 
 // 五度圏の並び（真上の C から時計回り）での位置。pc → 0..11
 const circleIndex = pc => (pc * 7) % 12

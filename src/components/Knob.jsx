@@ -150,7 +150,7 @@ export function Lcd({ children }) {
   )
 }
 
-// 縦向きのスライドスイッチ。options の段数でカチッと止まり、下の LCD に今の設定を表示する。
+// 縦向きのスライドスイッチ。options の段数でカチッと止まり、下の LCD に今の設定を表示する（目盛りの文字は出さない）。
 //   つまみのドラッグ / 溝のクリック / 上下キーで切り替える。上が先頭の選択肢。
 export function SlideSwitch({ label, options, value, onChange, hint }) {
   const trackRef = useRef(null)
@@ -204,13 +204,6 @@ export function SlideSwitch({ label, options, value, onChange, hint }) {
           ))}
           <span className="slide__thumb" style={{ top: pos(idx) }} aria-hidden="true" />
         </div>
-        <ul className="slide__labels" aria-hidden="true">
-          {options.map((o, i) => (
-            <li key={o.value} style={{ top: pos(i) }} className={i === idx ? 'is-on' : ''}>
-              {o.short}
-            </li>
-          ))}
-        </ul>
       </div>
       <Lcd>{options[idx].lcd}</Lcd>
       <div className="knob__label">{label}</div>

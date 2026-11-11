@@ -20,7 +20,7 @@
 /* ---------- ステージ行: ピアノロール（左）＋ 五度圏（右） ---------- */
 .stage-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 210px;
   align-items: center;
   gap: 24px;
 }
@@ -34,11 +34,11 @@
 /* 五度圏 */
 .cof {
   width: 100%;
-  max-width: 300px;
+  max-width: 210px;
 }
 @media (max-width: 820px) {
   .cof {
-    width: min(300px, 82vw);
+    width: min(220px, 64vw);
     margin: 0 auto;
   }
 }
@@ -85,7 +85,7 @@
 }
 .cof__node text {
   font-family: var(--sans);
-  font-size: 11px;
+  font-size: 14px; /* SVG 座標系での大きさ（表示幅 210px なら実寸 10px 前後） */
   fill: var(--text);
   transition: fill 0.25s ease;
 }
@@ -163,14 +163,14 @@
 /* ---------- 現在のコード ---------- */
 .chord-display {
   position: relative;
-  min-height: 190px;
+  min-height: 250px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding-top: 18px;
 }
 .chord-display__name {
-  font-size: clamp(44px, 8vw, 64px);
+  font-size: clamp(48px, 9vw, 84px);
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
@@ -600,12 +600,12 @@ select:disabled {
 
 /* 縦向きのスライドスイッチ（スケール） */
 .knob--slide {
-  width: 108px;
+  width: 96px;
 }
 .slide {
   position: relative;
   height: 76px;
-  width: 84px;
+  width: 76px;
   display: flex;
   justify-content: center;
 }
@@ -667,27 +667,6 @@ select:disabled {
   transform: translateY(-50%);
   background: var(--accent);
   box-shadow: 0 0 4px var(--accent);
-}
-.slide__labels {
-  position: absolute;
-  top: 6px;
-  bottom: 6px;
-  left: 62px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.slide__labels li {
-  position: absolute;
-  transform: translateY(-50%);
-  font-family: var(--mono);
-  font-size: 10px;
-  line-height: 1;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-.slide__labels li.is-on {
-  color: var(--accent);
 }
 .slide__track:focus-visible {
   outline: 2px solid var(--accent);

@@ -2,12 +2,12 @@ import { SCALES } from '../engines/chordEngine'
 import { KEYS, KEY_LABELS, PLAY_STYLES, RHYTHM_SPEEDS, WAVEFORMS } from '../constants'
 import Knob, { Pad, SlideSwitch } from './Knob'
 
-// スケールのスライドスイッチ: 目盛りの略号と LCD 表示
+// スケールのスライドスイッチ: LCD に出す表示
 const SCALE_SWITCH = [
-  { value: 'major', short: 'MAJ', lcd: 'MAJOR' },
-  { value: 'minor', short: 'MIN', lcd: 'MINOR' },
-  { value: 'majorPenta', short: 'M.PEN', lcd: 'MAJ PENTA' },
-  { value: 'minorPenta', short: 'm.PEN', lcd: 'MIN PENTA' },
+  { value: 'major', lcd: 'MAJOR' },
+  { value: 'minor', lcd: 'MINOR' },
+  { value: 'majorPenta', lcd: 'MAJ PENTA' },
+  { value: 'minorPenta', lcd: 'MIN PENTA' },
 ]
 
 // 1行ぶんの設定項目（罫線で区切った表の1行）。行全体がラベルなので、どこを押しても操作できる。
@@ -65,9 +65,9 @@ export default function WeightPanel({
   return (
     <section className="settings" aria-label="設定">
       <button className="settings__toggle" onClick={onToggleOpen} aria-expanded={open} aria-controls="settings-body">
-        <span className="settings__title">設定</span>
+        <span className="settings__title">SETTINGS</span>
         <span className="settings__summary">
-          {keyName} {SCALES[scale]?.label} · {bpm} BPM · ランダム度 {pct(temperature)} · スパイス {pct(spice)}
+          {keyName} {SCALES[scale]?.label} · {bpm} BPM · RANDOM {pct(temperature)} · SPICE {pct(spice)}
         </span>
         <span className="settings__chevron" aria-hidden="true">
           {open ? '▽' : '▷'}
@@ -77,7 +77,7 @@ export default function WeightPanel({
         <div className="settings__body" id="settings-body">
           <div className="deck" role="group" aria-label="つまみとスイッチ">
             <Knob
-              label="キー"
+              label="KEY"
               value={Math.max(0, KEYS.indexOf(keyName))}
               min={0}
               max={KEYS.length - 1}
@@ -90,7 +90,7 @@ export default function WeightPanel({
               format={i => KEY_LABELS[KEYS[i]] ?? KEYS[i]}
             />
             <SlideSwitch
-              label="スケール"
+              label="SCALE"
               options={SCALE_SWITCH}
               value={scale}
               onChange={onScaleChange}
@@ -98,7 +98,7 @@ export default function WeightPanel({
             />
             <span className="deck__sep" aria-hidden="true" />
             <Knob
-              label="テンポ"
+              label="TEMPO"
               value={bpm}
               min={50}
               max={200}
@@ -109,7 +109,7 @@ export default function WeightPanel({
               hint="BPM"
             />
             <Knob
-              label="ランダム度"
+              label="RANDOM"
               value={temperature}
               min={0}
               max={1}
@@ -120,7 +120,7 @@ export default function WeightPanel({
               hint="骨格の外れやすさ・7th/9th"
             />
             <Knob
-              label="スパイス"
+              label="SPICE"
               value={spice}
               min={0}
               max={1}
@@ -131,13 +131,13 @@ export default function WeightPanel({
               hint="クリシェ等の仕掛けの量"
             />
             <span className="deck__sep" aria-hidden="true" />
-            <Pad label="ノンダイア" on={enableSubs} onChange={onToggleSubs} hint="aug / dim7 / 借用 / 裏コード" />
-            <Pad label="複数コード" on={enableMultiChord} onChange={onToggleMultiChord} hint="経過和音・クリシェ" />
+            <Pad label="NON-DIATONIC" on={enableSubs} onChange={onToggleSubs} hint="aug / dim7 / 借用 / 裏コード" />
+            <Pad label="MULTI-CHORD" on={enableMultiChord} onChange={onToggleMultiChord} hint="経過和音・クリシェ" />
           </div>
 
           <div className="settings__rows">
-            <Group title="演奏">
-              <Field label="奏法">
+            <Group title="PLAY">
+              <Field label="STYLE">
                 <select value={playStyle} onChange={e => onPlayStyleChange(e.target.value)}>
                   {PLAY_STYLES.map(s => (
                     <option key={s.value} value={s.value}>
@@ -149,7 +149,7 @@ export default function WeightPanel({
               {/* 速さはブロック以外の奏法でだけ効くので、そのときだけ奏法の下からせり出す */}
               <div className={'reveal' + (speedActive ? ' is-open' : '')} inert={!speedActive}>
                 <div className="reveal__inner">
-                  <Field label="速さ">
+                  <Field label="RATE">
                     <select value={rhythmSpeed} onChange={e => onRhythmSpeedChange(e.target.value)}>
                       {RHYTHM_SPEEDS.map(s => (
                         <option key={s.value} value={s.value}>
@@ -160,7 +160,7 @@ export default function WeightPanel({
                   </Field>
                 </div>
               </div>
-              <Field label="音色">
+              <Field label="SOUND">
                 <select value={waveform} onChange={e => onWaveformChange(e.target.value)}>
                   {WAVEFORMS.map(w => (
                     <option key={w.value} value={w.value}>
