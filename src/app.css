@@ -59,19 +59,6 @@
   stroke-width: 2;
   stroke-opacity: 0.35;
 }
-.cof__ring {
-  fill: none;
-  stroke: var(--border-strong);
-  stroke-width: 0.7;
-}
-.cof__tick {
-  stroke: var(--text-h);
-  stroke-width: 1.2;
-}
-.cof__tick.is-bass {
-  stroke: var(--accent);
-  stroke-width: 1.8;
-}
 .cof__now {
   transform-origin: 150px 150px;
   animation: cof-in 0.35s ease-out;
@@ -81,7 +68,7 @@
   to { opacity: 1; transform: scale(1); }
 }
 .cof__poly {
-  fill: var(--accent-bg);
+  fill: none;
   stroke: var(--text-h);
   stroke-width: 1;
 }
@@ -89,9 +76,6 @@
   stroke: var(--text-h);
   stroke-width: 0.6;
   stroke-opacity: 0.55;
-}
-.cof__dot {
-  fill: var(--text-h);
 }
 .cof__node circle {
   fill: var(--bg);

@@ -44,7 +44,7 @@ src/
     Piano.jsx                背景の鍵盤（鳴っている音をハイライト）
     ChordDisplay.jsx         現在のコード（構成音・声部の動き）+ 通知ポップアップ
     ChordHistory.jsx         演奏済みコード（右端から左へ流れる・機能色の下線）
-    CircleOfFifths.jsx       五度圏（今の音を線で結ぶ・過去のコードは同心リングの刻み）
+    CircleOfFifths.jsx       五度圏（鳴っている音のノード同士を細い線で直接結ぶ）
     TransportControls.jsx    再生 / 位置カウンター（小節・拍・BPM）
     WeightPanel.jsx          設定パネル（▽ で開閉。ノブ / パッド + キー・奏法などの選択）
     Knob.jsx                 DJ コントローラー風のロータリーノブと点灯パッド
