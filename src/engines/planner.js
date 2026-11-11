@@ -29,8 +29,10 @@ const DOM7 = [0, 4, 7, 10]
 
 /** 色（トライアド / 7th / 9th）の選ばれやすさ */
 export function colorChances(temperature) {
-  const triad = 0.55 * (1 - temperature)
-  const rich = 0.35 * temperature
+  // 7th 系（7th / 9th 色）が付きすぎないよう、トライアドを厚めに残す
+  //   ランダム度 30%: トライアド 51% / 7th 40% / 9th 9%（7th を含むセクションは約 49%）
+  const triad = 0.62 * (1 - temperature) + 0.08
+  const rich = 0.3 * temperature
   return { triad, seventh: 1 - triad - rich, rich }
 }
 
