@@ -8,7 +8,7 @@ import { KEYS } from '../constants'
 const SIZE = 300
 const C = SIZE / 2
 const R_NODE = 122 // ノードを並べる半径
-const NODE_R = 17
+const NODE_R = 20 // 小さく表示しても音名が読めるよう、表示サイズに対して大きめ
 
 // 五度圏の並び（真上の C から時計回り）での位置。pc → 0..11
 const circleIndex = pc => (pc * 7) % 12
@@ -63,8 +63,9 @@ export default function CircleOfFifths({ history, keyName, scale }) {
   return (
     <div className="cof" aria-hidden="true">
       <svg viewBox={`0 0 ${SIZE} ${SIZE}`}>
+        <circle cx={C} cy={C} r={C - 1} className="cof__plate" />
         <circle cx={C} cy={C} r={R_NODE} className="cof__orbit" />
-        <path d={arcPath(majorTonicIdx - 1.5, majorTonicIdx + 5.5, R_NODE + 22)} className="cof__key" />
+        <path d={arcPath(majorTonicIdx - 1.5, majorTonicIdx + 5.5, R_NODE + 25)} className="cof__key" />
 
         {/* 今のコード: 鳴っている音同士を細い線で結ぶ */}
         <g className="cof__now" key={now?.id ?? 'none'}>

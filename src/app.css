@@ -17,39 +17,47 @@
   }
 }
 
-/* ---------- ステージ行: ピアノロール（左）＋ 五度圏（右） ---------- */
-/* ページの左端・上端までぴったり広げる（.app の余白と最大幅を打ち消す） */
+/* ---------- ステージ行: 全幅のピアノロール（右端に五度圏を重ねる） ----------
+   コード名・Play・設定がページ中央の同じ軸に並ぶよう、ピアノロールは左右対称に広げる */
 .stage-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  align-items: stretch; /* ピアノロールは行の高さいっぱい（上端にぴったり付ける） */
-  gap: 28px;
   width: 100vw;
   margin-left: calc(50% - 50vw);
-  padding-left: 14px; /* 左端に少しだけ間を空ける */
-  padding-right: 28px;
+  padding: 0 14px;
 }
 @media (max-width: 820px) {
   .stage-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding: 0 10px;
   }
 }
 
-/* 五度圏 */
-.cof {
-  width: 100%;
-  max-width: 260px;
-  align-self: center;
-  padding-top: 18px; /* 上端との間（外周の弧が窮屈に見えないように） */
+/* 五度圏（補助計器）: ピアノロールの右端に縦中央で重ねる */
+.stage > .cof {
+  position: absolute;
+  z-index: 2;
+  right: 18px;
+  top: 50%;
+  width: 180px;
+  transform: translateY(-50%);
 }
 @media (max-width: 820px) {
-  .cof {
-    width: min(260px, 72vw);
-    margin: 0 auto;
+  /* 狭い画面ではコード名と重なるので、ピアノロールの下に置く */
+  .stage > .cof {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    width: min(200px, 60vw);
+    margin: 14px auto 0;
   }
+  /* 鍵盤の背景は五度圏の手前（上）までにする。五度圏は正方形なので高さ = 幅 */
+  .stage > .piano {
+    height: calc(100% - min(200px, 60vw) - 14px);
+  }
+}
+.cof__plate {
+  /* 下の鍵盤と分けるための半透明の台座 */
+  fill: var(--bg);
+  fill-opacity: 0.82;
 }
 .cof svg {
   display: block;
@@ -94,7 +102,7 @@
 }
 .cof__node text {
   font-family: var(--sans);
-  font-size: 14px; /* SVG 座標系での大きさ（表示幅 210px なら実寸 10px 前後） */
+  font-size: 17px; /* SVG 座標系での大きさ（表示幅 180px で実寸 10px 前後） */
   fill: var(--text);
   transition: fill 0.25s ease;
 }
@@ -128,7 +136,7 @@
 .stage {
   position: relative;
 }
-.stage > *:not(.piano) {
+.stage > *:not(.piano):not(.cof) {
   position: relative;
   z-index: 1;
 }
@@ -236,7 +244,7 @@
 .chord-history {
   margin: 14px 0 16px;
   min-height: 52px;
-  padding-right: 16px;
+  padding-right: 214px; /* 右端に重ねた五度圏（180px + 余白）の手前で止める */
   overflow: hidden;
   /* ピアノロールの左端ぎりぎりで消えるよう、フェードは端の数%だけ */
   -webkit-mask-image: linear-gradient(to right, transparent, #000 7%);
@@ -273,6 +281,11 @@
   flex: 0 0 1px;
   align-self: stretch;
   background: var(--border-strong);
+}
+@media (max-width: 820px) {
+  .chord-history {
+    padding-right: 12px;
+  }
 }
 @media (max-width: 640px) {
   .chord-history__track {

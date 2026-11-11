@@ -42,8 +42,9 @@ export default function App() {
           <Piano activeMidis={currentChord?.midis || []} bassMidi={currentChord?.voicing?.bass ?? null} />
           <ChordDisplay chord={currentChord} />
           <ChordHistory history={history} />
+          {/* 五度圏はピアノロールの右端に重ねる「補助計器」。主役のコード名はページ中央の軸に置く */}
+          <CircleOfFifths history={history} keyName={key} scale={scale} />
         </div>
-        <CircleOfFifths history={history} keyName={key} scale={scale} />
       </div>
 
       <TransportControls playing={playing} onToggle={toggle} beatPos={beatPos} bpm={bpm} />
