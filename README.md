@@ -45,7 +45,8 @@ src/
     ChordDisplay.jsx         現在のコード（構成音・声部の動き）+ 通知ポップアップ
     ChordHistory.jsx         演奏済みコード（右端から左へ流れる・機能色の下線）
     TransportControls.jsx    再生 / 位置カウンター（小節・拍・BPM）
-    WeightPanel.jsx          設定パネル（▽ で開閉。曲 / 演奏 / 音 / 生成）
+    WeightPanel.jsx          設定パネル（▽ で開閉。ノブ / パッド + キー・奏法などの選択）
+    Knob.jsx                 DJ コントローラー風のロータリーノブと点灯パッド
     DecorationInfo.jsx       仕掛け・色の起きやすさ
 docs/
   PLAN.md                    改善計画

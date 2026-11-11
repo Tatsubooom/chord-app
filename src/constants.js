@@ -34,8 +34,8 @@ export const WAVEFORMS = [
 
 // 1小節の拍数
 export const BEATS_PER_MEASURE = 4
-// 履歴として保持する拍数（8小節ぶん）
-export const HISTORY_BEATS = 32
+// 履歴として保持する拍数（32小節ぶん。ピアノロールの左端まで流れて見切れるのに十分な量）
+export const HISTORY_BEATS = 128
 // 区切り線を入れる小節ブロックの大きさ（4小節ごと）
 export const BLOCK_MEASURES = 4
 

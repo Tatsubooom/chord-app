@@ -131,8 +131,9 @@
   min-height: 52px;
   padding-right: 16px;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 40%);
-  mask-image: linear-gradient(to right, transparent, #000 40%);
+  /* ピアノロールの左端ぎりぎりで消えるよう、フェードは端の数%だけ */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 7%);
+  mask-image: linear-gradient(to right, transparent, #000 7%);
 }
 .chord-history__track {
   display: flex;
@@ -280,12 +281,14 @@ button {
   color: var(--text);
 }
 .settings__body {
-  columns: 2;
-  column-gap: 32px;
   padding-bottom: 12px;
 }
+.settings__rows {
+  columns: 2;
+  column-gap: 32px;
+}
 @media (max-width: 640px) {
-  .settings__body {
+  .settings__rows {
     columns: 1;
   }
 }
@@ -305,7 +308,7 @@ button {
 }
 .setting {
   display: grid;
-  grid-template-columns: 84px minmax(0, 1fr) 62px;
+  grid-template-columns: 84px minmax(0, 1fr);
   align-items: center;
   column-gap: 12px;
   padding: 8px 0;
@@ -320,15 +323,8 @@ button {
   display: flex;
   min-width: 0;
 }
-.setting__value {
-  text-align: right;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--text-h);
-  font-variant-numeric: tabular-nums;
-}
 .setting__hint {
-  grid-column: 2 / -1;
+  grid-column: 2;
   margin-top: 3px;
   font-size: 11px;
   line-height: 1.4;
@@ -355,40 +351,161 @@ select:disabled {
   border-style: dashed;
   cursor: not-allowed;
 }
-input[type='range'] {
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-.switch {
-  appearance: none;
-  position: relative;
-  width: 38px;
-  height: 18px;
-  margin: 0;
-  border: 1px solid var(--border-strong);
+/* ---------- DJ コントローラー風のノブとパッド ---------- */
+.deck {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 18px 26px;
+  padding: 18px 12px 14px;
+  margin-top: 4px;
   background: var(--bg-deep);
-  cursor: pointer;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
-.switch::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  background: var(--text-dim);
-  transition: transform 0.12s ease;
+.deck__sep {
+  align-self: stretch;
+  width: 1px;
+  background: var(--border);
 }
-.switch:checked {
+.deck__help {
+  margin: 6px 0 2px;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+}
+.knob {
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.knob__dial {
+  width: 76px;
+  height: 76px;
+  cursor: ns-resize;
+  touch-action: none; /* スマホでもドラッグで回せるように */
+  user-select: none;
+  border-radius: 50%;
+}
+.knob__dial svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.knob__tick {
+  stroke: var(--text-dim);
+  stroke-width: 1;
+}
+.knob__ring {
+  fill: none;
+  stroke: var(--meter-off);
+  stroke-width: 3.5;
+  stroke-linecap: butt;
+}
+.knob__led {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3.5;
+  stroke-linecap: butt;
+  filter: drop-shadow(0 0 2px var(--accent-border));
+}
+.knob__cap {
+  fill: #23252e;
+  stroke: #3a3d49;
+  stroke-width: 1;
+}
+.knob__grip {
+  fill: none;
+  stroke: #2d2f3a;
+  stroke-width: 1.2;
+  stroke-dasharray: 1.2 2.2; /* ローレット（滑り止め）の刻み */
+}
+.knob__pointer {
+  stroke: var(--text-h);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.knob__dial:hover .knob__cap {
+  stroke: var(--accent-border);
+}
+.knob__dial:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.knob__value {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.knob__label {
+  font-size: 12px;
+  color: var(--text);
+}
+.knob__hint {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-dim);
+}
+
+/* 押すと点灯するパッド */
+.pad {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 6px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: #1d1f27;
+  border: 1px solid #3a3d49;
+  border-radius: 6px; /* 物理ボタンらしさのため、ここだけ小さく角を落とす */
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.45);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: background-color 0.12s, box-shadow 0.12s;
+}
+.pad:active {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  transform: translateY(1px);
+}
+.pad__led {
+  width: 22px;
+  height: 4px;
+  background: var(--meter-off);
+}
+.pad.is-on {
+  color: var(--text-h);
   border-color: var(--accent);
+  background: #2a2140;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.45), 0 0 12px rgba(170, 59, 255, 0.35);
 }
-.switch:checked::after {
-  transform: translateX(20px);
+.pad.is-on .pad__led {
   background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
 }
+@media (max-width: 640px) {
+  .deck {
+    gap: 14px 10px;
+    padding: 14px 6px 12px;
+  }
+  .deck__sep {
+    display: none;
+  }
+  .knob {
+    width: 30%;
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -491,7 +608,7 @@ input[type='range'] {
   }
   .piano__white,
   .piano__black,
-  .switch::after {
+  .pad {
     transition: none;
   }
 }

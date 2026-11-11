@@ -16,7 +16,7 @@ export default function ChordHistory({ history }) {
             <Fragment key={c.id}>
               <div
                 className={'chord-history__item' + (c.func ? ` fn-${c.func}` : '') + (i === 0 ? ' is-now' : '')}
-                style={{ opacity: Math.max(0.2, 1 - i * 0.07) }}
+                style={{ opacity: Math.max(0.35, 1 - i * 0.04) }}
               >
                 {c.name}
               </div>
