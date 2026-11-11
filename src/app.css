@@ -73,8 +73,51 @@
 .cof__key {
   fill: none;
   stroke: var(--accent);
-  stroke-width: 2;
-  stroke-opacity: 0.35;
+  stroke-width: 2.5;
+  stroke-opacity: 0.55;
+  stroke-linecap: round;
+}
+/* キー / スケールの変更で円全体がシリンダーのように回る（少し行き過ぎて戻るイージング） */
+.cof__drum {
+  transform-origin: 150px 150px;
+  transition: transform 0.9s cubic-bezier(0.34, 1.32, 0.42, 1);
+}
+.cof__node text {
+  transition: transform 0.9s cubic-bezier(0.34, 1.32, 0.42, 1);
+}
+.cof__motion {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+.cof__arrowhead {
+  fill: var(--accent);
+}
+.cof__held {
+  fill: none;
+  stroke: var(--text-h);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 2.5;
+}
+.cof__trail {
+  fill: var(--accent);
+}
+.cof__steps {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  fill: var(--text-h);
+}
+.cof__pip {
+  fill: var(--meter-off);
+}
+.cof__pip.is-on {
+  fill: var(--accent);
+}
+.cof__common {
+  font-family: var(--mono);
+  font-size: 16px;
+  fill: var(--text);
 }
 .cof__now {
   transform-origin: 150px 150px;
@@ -849,6 +892,10 @@ select:disabled {
   .chord-history__track,
   .cof__now {
     animation: none;
+  }
+  .cof__drum,
+  .cof__node text {
+    transition: none;
   }
   .piano__white,
   .piano__black,

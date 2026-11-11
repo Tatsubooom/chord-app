@@ -191,6 +191,7 @@ export function realizeChord(spec, key, scaleName, prevVoicing = null) {
     ...spec,
     name,
     roman,
+    rootPc, // 絶対ピッチクラス（キーが後で変わっても位置がずれないように）
     voicing,
     midis: voicing.midis,
     noteNames: voicing.midis.map(m => midiToNoteName(m)),
