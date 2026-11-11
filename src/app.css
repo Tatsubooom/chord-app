@@ -71,19 +71,21 @@
   stroke-width: 1;
 }
 .cof__key {
+  /* 設定のノブの LED と同じ、ほんのり光る紫 */
   fill: none;
   stroke: var(--accent);
-  stroke-width: 2.5;
-  stroke-opacity: 0.55;
+  stroke-width: 3;
   stroke-linecap: round;
+  filter: drop-shadow(0 0 3px var(--accent-border)) drop-shadow(0 0 6px rgba(170, 59, 255, 0.45));
 }
-/* キー / スケールの変更で円全体がシリンダーのように回る（少し行き過ぎて戻るイージング） */
+/* キー / スケールの変更で円全体がシリンダーのように回る。
+   ゆっくり滑らかに加速し、長く減速して行き過ぎずにぴたりと止まる */
 .cof__drum {
   transform-origin: 150px 150px;
-  transition: transform 0.9s cubic-bezier(0.34, 1.32, 0.42, 1);
+  transition: transform 1.6s cubic-bezier(0.45, 0, 0.12, 1);
 }
 .cof__node text {
-  transition: transform 0.9s cubic-bezier(0.34, 1.32, 0.42, 1);
+  transition: transform 1.6s cubic-bezier(0.45, 0, 0.12, 1);
 }
 .cof__motion {
   fill: none;

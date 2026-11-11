@@ -10,7 +10,8 @@ import { KEYS } from '../constants'
 //   ・内側の小さな点は、直前数コードのルートの足跡
 //   ・中央: 五度圏上のルートの動き（←1 = 5度下行）、つながりの強さ（5段）、共通音の数
 //   ・外側の紫の弧は、今のキーのダイアトニック範囲（五度圏で隣り合う7音）
-//   キー / スケールを変えると、主音が真上に来るよう円全体がシリンダーのように回る。
+//   キーを変えると主音が真上に来るよう円全体がシリンダーのように回り、
+//   スケールを変えたときは（主音が同じでも）ひと回り転がって新しいスケールに切り替わる。
 const SIZE = 300
 const C = SIZE / 2
 const R_NODE = 112 // ノードを並べる半径
@@ -26,6 +27,8 @@ const pcsOf = chord => [...new Set((chord?.midis || []).map(m => m % 12))]
 const rootOf = chord => (chord ? (chord.kind === 'blk' ? chord.voicing.bass % 12 : chord.rootPc) : null)
 // -180〜180 に正規化（最短方向に回すため）
 const shortest = d => ((((d + 180) % 360) + 360) % 360) - 180
+// スケールの並び（スライドスイッチと同じ順）。下へ動かすと時計回り、上へ動かすと反時計回りに転がる
+const SCALE_ORDER = ['major', 'minor', 'majorPenta', 'minorPenta']
 
 function polygonPath(pcs, r) {
   const pts = pcs
@@ -66,8 +69,15 @@ export default function CircleOfFifths({ history, keyName, scale }) {
   // 主音が真上に来る回転角。直前の角度から最短方向に回るよう累積で持つ
   // （前回のレンダー結果から状態を導く、React 推奨のパターン）
   const target = -tonicIdx * 30
-  const [rot, setRot] = useState({ target, angle: target })
-  if (rot.target !== target) setRot({ target, angle: rot.angle + shortest(target - rot.angle) })
+  const [rot, setRot] = useState({ target, scale, angle: target })
+  if (rot.target !== target || rot.scale !== scale) {
+    let next = rot.angle + shortest(target - rot.angle)
+    if (rot.scale !== scale) {
+      // スケール変更: 主音の位置は保ったまま、ひと回り転がす
+      next += SCALE_ORDER.indexOf(scale) > SCALE_ORDER.indexOf(rot.scale) ? 360 : -360
+    }
+    setRot({ target, scale, angle: next })
+  }
   const angle = rot.angle
 
   const now = history[0]
@@ -111,7 +121,8 @@ export default function CircleOfFifths({ history, keyName, scale }) {
           </marker>
         </defs>
 
-        <circle cx={C} cy={C} r={C - 1} className="cof__plate" />
+        {/* 台座はノードの輪の内側だけ。外側のキーの弧との間は、下のピアノロールが透けて見える */}
+        <circle cx={C} cy={C} r={R_NODE + NODE_R + 3} className="cof__plate" />
 
         <g className="cof__drum" style={spin}>
           <circle cx={C} cy={C} r={R_NODE} className="cof__orbit" />
