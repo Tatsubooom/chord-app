@@ -52,6 +52,7 @@ body {
 #root {
   min-height: 100svh;
   text-align: center;
+  overflow-x: clip; /* 全幅のピアノロール（100vw）でスクロールバー分の横スクロールが出ないように */
 }
 
 h1,
